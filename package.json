@@ -1,0 +1,20 @@
+{
+  "name": "redux-database",
+  "version": "0.0.1",
+  "main": "dist/index",
+  "types": "dist/index",
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "pretty": "prettier --write src/**/*.{js,jsx,ts,tsx}\"",
+    "lint": "tslint --fix src/**/*.ts{,x}",
+    "watch": "rimraf dist && tsc -w"
+  },
+  "devDependencies": {
+    "rimraf": "^2.6.2",
+    "typescript": "^2.8.3"
+  }
+}
