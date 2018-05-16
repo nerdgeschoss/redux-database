@@ -1,3 +1,6 @@
-import { DB, DBAction, guid, reducer, DataTable } from "./db";
+import { DB } from "./db";
+import { DataTable } from "./table";
+import { DBAction } from "./actions";
+import { reducer } from "./reducer";
 
-export { DB, DBAction, guid, reducer, DataTable };
+export { DB, DBAction, reducer, DataTable };
