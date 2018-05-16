@@ -1,3 +1,3 @@
-import {DB, DBAction, guid, reducer, DataTable} from './db';
+import { DB, DBAction, guid, reducer, DataTable } from "./db";
 
-export {DB, DBAction, guid, reducer, DataTable};
+export { DB, DBAction, guid, reducer, DataTable };

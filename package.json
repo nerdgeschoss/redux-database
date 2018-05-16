@@ -9,12 +9,14 @@
   "license": "MIT",
   "scripts": {
     "build": "rimraf dist && tsc",
-    "pretty": "prettier --write src/**/*.{js,jsx,ts,tsx}\"",
+    "pretty": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint": "tslint --fix src/**/*.ts{,x}",
     "watch": "rimraf dist && tsc -w"
   },
   "devDependencies": {
+    "prettier": "^1.12.1",
     "rimraf": "^2.6.2",
+    "tslint": "^5.9.1",
     "typescript": "^2.8.3"
   }
 }

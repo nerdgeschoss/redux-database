@@ -10,9 +10,11 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 function guid() {
     function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
     }
-    return [s4() + s4(), s4(), s4(), s4(), s4() + s4() + s4()].join('-');
+    return [s4() + s4(), s4(), s4(), s4(), s4() + s4() + s4()].join("-");
 }
 exports.guid = guid;
 var DB = /** @class */ (function () {
@@ -24,7 +26,7 @@ var DB = /** @class */ (function () {
     };
     DB.prototype.set = function (name, value) {
         return {
-            type: 'SETTINGS_UPDATE',
+            type: "SETTINGS_UPDATE",
             payload: {
                 key: name,
                 setting: value
@@ -68,7 +70,7 @@ var Table = /** @class */ (function () {
         configurable: true
     });
     Table.prototype.where = function (query) {
-        if (typeof (query) === 'function') {
+        if (typeof query === "function") {
             return this.all.filter(query);
         }
         else {
@@ -88,7 +90,7 @@ var Table = /** @class */ (function () {
         var newRecords = records instanceof Array ? records : [records];
         var insertedRecords = newRecords.map(function (e) { return _this.applyId(e); });
         return {
-            type: 'INSERT_RECORD',
+            type: "INSERT_RECORD",
             payload: {
                 key: this.key,
                 ids: insertedRecords.map(function (e) { return e.id; }),
@@ -98,7 +100,7 @@ var Table = /** @class */ (function () {
     };
     Table.prototype.update = function (id, values) {
         return {
-            type: 'UPDATE_RECORD',
+            type: "UPDATE_RECORD",
             payload: {
                 key: this.key,
                 ids: this.extractIds(id),
@@ -108,7 +110,7 @@ var Table = /** @class */ (function () {
     };
     Table.prototype.delete = function (id) {
         return {
-            type: 'DELETE_RECORD',
+            type: "DELETE_RECORD",
             payload: {
                 key: this.key,
                 ids: this.extractIds(id)
@@ -117,7 +119,7 @@ var Table = /** @class */ (function () {
     };
     Table.prototype.extractIds = function (object) {
         if (object === undefined) {
-            throw ('Trying to insert/update record which was not saved before');
+            throw "Trying to insert/update record which was not saved before";
         }
         var test;
         if (!(object instanceof Array)) {
@@ -126,7 +128,7 @@ var Table = /** @class */ (function () {
         else {
             test = object;
         }
-        return test.map(function (e) { return e['id'] || e; });
+        return test.map(function (e) { return e["id"] || e; });
     };
     Table.prototype.applyId = function (record) {
         var copy = Object.assign({}, record);
@@ -140,7 +142,7 @@ var Table = /** @class */ (function () {
 exports.Table = Table;
 function byId(records) {
     var map = {};
-    records.forEach(function (e) { return map[e.id] = e; });
+    records.forEach(function (e) { return (map[e.id] = e); });
     return map;
 }
 function except(object, keys) {
@@ -157,28 +159,29 @@ function reducer(initialState) {
         if (!state) {
             return initialState;
         }
-        ;
         switch (action.type) {
-            case 'INSERT_RECORD': {
+            case "INSERT_RECORD": {
                 var key_1 = action.payload.key;
                 var newIDs = action.payload.ids.filter(function (id) { return !state.data[key_1].ids.includes(id); });
                 var dataSet = __assign({}, state.data[key_1], { byId: __assign({}, state.data[key_1].byId, byId(action.payload.data)), ids: state.data[key_1].ids.concat(newIDs) });
                 return __assign({}, state, { data: __assign({}, state.data, (_a = {}, _a[key_1] = dataSet, _a)) });
             }
-            case 'DELETE_RECORD': {
+            case "DELETE_RECORD": {
                 var key = action.payload.key;
                 var ids_1 = action.payload.ids;
                 var dataSet = __assign({}, state.data[key], { byId: except(state.data[key].byId, ids_1), ids: state.data[key].ids.filter(function (e) { return !ids_1.includes(e); }) });
                 return __assign({}, state, { data: __assign({}, state.data, (_b = {}, _b[key] = dataSet, _b)) });
             }
-            case 'UPDATE_RECORD': {
+            case "UPDATE_RECORD": {
                 var key_2 = action.payload.key;
                 var updates_1 = {};
-                action.payload.ids.forEach(function (e) { return updates_1[e] = __assign({}, state.data[key_2].byId[e], action.payload.data); });
+                action.payload.ids.forEach(function (e) {
+                    return (updates_1[e] = __assign({}, state.data[key_2].byId[e], action.payload.data));
+                });
                 var dataSet = __assign({}, state.data[key_2], { byId: __assign({}, state.data[key_2].byId, updates_1) });
                 return __assign({}, state, { data: __assign({}, state.data, (_c = {}, _c[key_2] = dataSet, _c)) });
             }
-            case 'SETTINGS_UPDATE': {
+            case "SETTINGS_UPDATE": {
                 var key = action.payload.key;
                 return __assign({}, state, { settings: __assign({}, state.settings, (_d = {}, _d[key] = action.payload.setting, _d)) });
             }

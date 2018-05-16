@@ -10,7 +10,7 @@ export interface DataTable<T> {
     ids: string[];
 }
 export interface UpdateAction {
-    type: 'UPDATE_RECORD';
+    type: "UPDATE_RECORD";
     payload: {
         ids: string[];
         key: string;
@@ -18,7 +18,7 @@ export interface UpdateAction {
     };
 }
 export interface InsertAction {
-    type: 'INSERT_RECORD';
+    type: "INSERT_RECORD";
     payload: {
         ids: string[];
         key: string;
@@ -26,14 +26,14 @@ export interface InsertAction {
     };
 }
 export interface DeleteAction {
-    type: 'DELETE_RECORD';
+    type: "DELETE_RECORD";
     payload: {
         key: string;
         ids: string[];
     };
 }
 export interface SettingsUpdateAction {
-    type: 'SETTINGS_UPDATE';
+    type: "SETTINGS_UPDATE";
     payload: {
         key: string;
         setting: any;
@@ -50,9 +50,9 @@ export interface State<Setting, Data, Types extends TypeLookup> {
 export declare class DB<Data, Setting, Types extends TypeLookup, S extends State<Data, Setting, Types>> {
     private state;
     constructor(state: S);
-    get<K extends keyof S['settings']>(name: K): S['settings'][K];
-    set<K extends keyof S['settings'], U extends S['settings'][K]>(name: K, value: U): SettingsUpdateAction;
-    table<K extends keyof S['types']>(type: K): Table<S['types'][K]>;
+    get<K extends keyof S["settings"]>(name: K): S["settings"][K];
+    set<K extends keyof S["settings"], U extends S["settings"][K]>(name: K, value: U): SettingsUpdateAction;
+    table<K extends keyof S["types"]>(type: K): Table<S["types"][K]>;
 }
 export declare type OptionalID = {
     id?: string;
