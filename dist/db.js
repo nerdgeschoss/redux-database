@@ -36,7 +36,7 @@ var DB = /** @class */ (function () {
     };
     DB.prototype.set = function (name, value) {
         return {
-            type: 'SETTINGS_UPDATE',
+            type: "SETTINGS_UPDATE",
             payload: {
                 context: this.currentContext,
                 key: name,
@@ -46,11 +46,27 @@ var DB = /** @class */ (function () {
     };
     DB.prototype.table = function (type) {
         var _state = this.state;
-        var contextChanges = this.currentContext && _state._context && _state._context[this.currentContext] && _state._context[this.currentContext][type];
-        return new Table(_state.data[type], type, { context: this.currentContext, contextChanges: contextChanges });
+        var contextChanges = this.currentContext &&
+            _state._context &&
+            _state._context[this.currentContext] &&
+            _state._context[this.currentContext][type];
+        return new Table(_state.data[type], type, {
+            context: this.currentContext,
+            contextChanges: contextChanges
+        });
     };
     DB.prototype.context = function (context) {
         return new DB(this.state, { context: context });
+    };
+    DB.prototype.transaction = function (execute) {
+        var actions = [];
+        execute(function (action) { return actions.push(action); });
+        return {
+            type: "TRANSACTION",
+            payload: {
+                actions: actions
+            }
+        };
     };
     DB.prototype.commit = function () {
         var currentContext = this.currentContext;
@@ -58,7 +74,7 @@ var DB = /** @class */ (function () {
             throw "Called commit on a root context.";
         }
         return {
-            type: 'COMMIT_CONTEXT',
+            type: "COMMIT_CONTEXT",
             payload: { context: currentContext }
         };
     };
@@ -77,8 +93,7 @@ var Table = /** @class */ (function () {
         if (this.contextChanges && this.contextChanges.deletedIds.includes(id)) {
             return undefined;
         }
-        ;
-        var changes = this.contextChanges && this.contextChanges.byId[id] || {};
+        var changes = (this.contextChanges && this.contextChanges.byId[id]) || {};
         var object = this.data.byId[id];
         return Object.assign({}, object, changes);
     };
@@ -105,7 +120,7 @@ var Table = /** @class */ (function () {
         configurable: true
     });
     Table.prototype.where = function (query) {
-        if (typeof (query) === 'function') {
+        if (typeof query === "function") {
             return this.all.filter(query);
         }
         else {
@@ -125,7 +140,7 @@ var Table = /** @class */ (function () {
         var newRecords = records instanceof Array ? records : [records];
         var insertedRecords = newRecords.map(function (e) { return _this.applyId(e); });
         return {
-            type: 'INSERT_RECORD',
+            type: "INSERT_RECORD",
             payload: {
                 key: this.key,
                 context: this.context,
@@ -136,7 +151,7 @@ var Table = /** @class */ (function () {
     };
     Table.prototype.update = function (id, values) {
         return {
-            type: 'UPDATE_RECORD',
+            type: "UPDATE_RECORD",
             payload: {
                 key: this.key,
                 context: this.context,
@@ -147,7 +162,7 @@ var Table = /** @class */ (function () {
     };
     Table.prototype.delete = function (id) {
         return {
-            type: 'DELETE_RECORD',
+            type: "DELETE_RECORD",
             payload: {
                 key: this.key,
                 context: this.context,
@@ -158,7 +173,8 @@ var Table = /** @class */ (function () {
     Object.defineProperty(Table.prototype, "ids", {
         get: function () {
             var newIds = (this.contextChanges || { newIds: [] }).newIds;
-            var deletedIds = (this.contextChanges || { deletedIds: [] }).deletedIds;
+            var deletedIds = (this.contextChanges || { deletedIds: [] })
+                .deletedIds;
             return this.data.ids.concat(newIds).filter(function (id) { return !deletedIds.includes(id); });
         },
         enumerable: true,
@@ -203,98 +219,112 @@ function except(object, keys) {
 }
 function applyInContext(state, context, field, handler) {
     var _context = state._context || {};
-    var changes = _context[context] && _context[context][field] || { byId: {}, deletedIds: [], newIds: [] };
+    var changes = (_context[context] &&
+        _context[context][field]) || { byId: {}, deletedIds: [], newIds: [] };
     changes = handler(changes);
     var currentContext = _context[context] || {};
     return __assign({}, state, { _context: __assign({}, _context, (_a = {}, _a[context] = __assign({}, currentContext, (_b = {}, _b[field] = __assign({}, currentContext[field], changes), _b)), _a)) });
     var _a, _b;
 }
+function reduce(state, action) {
+    switch (action.type) {
+        case "INSERT_RECORD": {
+            var key_1 = action.payload.key;
+            var newIDs_1 = action.payload.ids.filter(function (id) { return !state.data[key_1].ids.includes(id); });
+            if (action.payload.context) {
+                state = applyInContext(state, action.payload.context, key_1, function (changes) {
+                    return __assign({}, changes, { newIds: changes.newIds.concat(newIDs_1), byId: __assign({}, changes.byId, byId(action.payload.data)) });
+                });
+            }
+            else {
+                var dataSet = __assign({}, state.data[key_1], { byId: __assign({}, state.data[key_1].byId, byId(action.payload.data)), ids: state.data[key_1].ids.concat(newIDs_1) });
+                state = __assign({}, state, { data: __assign({}, state.data, (_a = {}, _a[key_1] = dataSet, _a)) });
+            }
+            break;
+        }
+        case "DELETE_RECORD": {
+            var key = action.payload.key;
+            var ids_1 = action.payload.ids;
+            if (action.payload.context) {
+                state = applyInContext(state, action.payload.context, key, function (changes) {
+                    return __assign({}, changes, { deletedIds: changes.deletedIds.concat(ids_1) });
+                });
+            }
+            else {
+                var dataSet = __assign({}, state.data[key], { byId: except(state.data[key].byId, ids_1), ids: state.data[key].ids.filter(function (e) { return !ids_1.includes(e); }) });
+                state = __assign({}, state, { data: __assign({}, state.data, (_b = {}, _b[key] = dataSet, _b)) });
+            }
+            break;
+        }
+        case "UPDATE_RECORD": {
+            var key_2 = action.payload.key;
+            if (action.payload.context) {
+                state = applyInContext(state, action.payload.context, key_2, function (changes) {
+                    var updates = {};
+                    action.payload.ids.forEach(function (e) { return (updates[e] = __assign({}, changes.byId[e], action.payload.data)); });
+                    return __assign({}, changes, { byId: __assign({}, changes.byId, updates) });
+                });
+            }
+            else {
+                var updates_1 = {};
+                action.payload.ids.forEach(function (e) {
+                    return (updates_1[e] = __assign({}, state.data[key_2].byId[e], action.payload.data));
+                });
+                var dataSet = __assign({}, state.data[key_2], { byId: __assign({}, state.data[key_2].byId, updates_1) });
+                state = __assign({}, state, { data: __assign({}, state.data, (_c = {}, _c[key_2] = dataSet, _c)) });
+            }
+            break;
+        }
+        case "SETTINGS_UPDATE": {
+            var key = action.payload.key;
+            if (action.payload.context) {
+                var _state = state;
+                var _context = _state._context || {};
+                var currentContext = _context[action.payload.context] || {};
+                state = __assign({}, _state, { _context: __assign({}, _context, (_d = {}, _d[action.payload.context] = currentContext, _d)) });
+            }
+            else {
+                state = __assign({}, state, { settings: __assign({}, state.settings, (_e = {}, _e[key] = action.payload.setting, _e)) });
+            }
+            break;
+        }
+        case "COMMIT_CONTEXT": {
+            var _state = state;
+            var context = action.payload.context;
+            var changes_1 = (_state._context && _state._context[context]) || {};
+            state = __assign({}, _state, { data: __assign({}, _state.data), _context: except(_state._context, [context]) });
+            Object.keys(changes_1).forEach(function (table) {
+                var change = changes_1[table];
+                var data = state.data[table];
+                state.data[table] = {
+                    ids: data.ids
+                        .concat(change.newIds)
+                        .filter(function (id) { return !change.deletedIds.includes(id); }),
+                    byId: __assign({}, data.byId)
+                };
+                Object.keys(change.byId).forEach(function (id) {
+                    state.data[table].byId[id] = __assign({}, state.data[table].byId[id], change.byId[id]);
+                });
+            });
+            break;
+        }
+        case "TRANSACTION": {
+            action.payload.actions.forEach(function (a) {
+                state = reduce(state, a);
+            });
+            break;
+        }
+    }
+    return state;
+    var _a, _b, _c, _d, _e;
+}
+exports.reduce = reduce;
 function reducer(initialState) {
     return function (state, action) {
         if (!state) {
             state = initialState;
         }
-        ;
-        switch (action.type) {
-            case 'INSERT_RECORD': {
-                var key_1 = action.payload.key;
-                var newIDs_1 = action.payload.ids.filter(function (id) { return !state.data[key_1].ids.includes(id); });
-                if (action.payload.context) {
-                    state = applyInContext(state, action.payload.context, key_1, (function (changes) {
-                        return __assign({}, changes, { newIds: changes.newIds.concat(newIDs_1), byId: __assign({}, changes.byId, byId(action.payload.data)) });
-                    }));
-                }
-                else {
-                    var dataSet = __assign({}, state.data[key_1], { byId: __assign({}, state.data[key_1].byId, byId(action.payload.data)), ids: state.data[key_1].ids.concat(newIDs_1) });
-                    state = __assign({}, state, { data: __assign({}, state.data, (_a = {}, _a[key_1] = dataSet, _a)) });
-                }
-                break;
-            }
-            case 'DELETE_RECORD': {
-                var key = action.payload.key;
-                var ids_1 = action.payload.ids;
-                if (action.payload.context) {
-                    state = applyInContext(state, action.payload.context, key, (function (changes) {
-                        return __assign({}, changes, { deletedIds: changes.deletedIds.concat(ids_1) });
-                    }));
-                }
-                else {
-                    var dataSet = __assign({}, state.data[key], { byId: except(state.data[key].byId, ids_1), ids: state.data[key].ids.filter(function (e) { return !ids_1.includes(e); }) });
-                    state = __assign({}, state, { data: __assign({}, state.data, (_b = {}, _b[key] = dataSet, _b)) });
-                }
-                break;
-            }
-            case 'UPDATE_RECORD': {
-                var key_2 = action.payload.key;
-                if (action.payload.context) {
-                    state = applyInContext(state, action.payload.context, key_2, (function (changes) {
-                        var updates = {};
-                        action.payload.ids.forEach(function (e) { return updates[e] = __assign({}, changes.byId[e], action.payload.data); });
-                        return __assign({}, changes, { byId: __assign({}, changes.byId, updates) });
-                    }));
-                }
-                else {
-                    var updates_1 = {};
-                    action.payload.ids.forEach(function (e) { return updates_1[e] = __assign({}, state.data[key_2].byId[e], action.payload.data); });
-                    var dataSet = __assign({}, state.data[key_2], { byId: __assign({}, state.data[key_2].byId, updates_1) });
-                    state = __assign({}, state, { data: __assign({}, state.data, (_c = {}, _c[key_2] = dataSet, _c)) });
-                }
-                break;
-            }
-            case 'SETTINGS_UPDATE': {
-                var key = action.payload.key;
-                if (action.payload.context) {
-                    var _state = state;
-                    var _context = _state._context || {};
-                    var currentContext = _context[action.payload.context] || {};
-                    state = __assign({}, _state, { _context: __assign({}, _context, (_d = {}, _d[action.payload.context] = currentContext, _d)) });
-                }
-                else {
-                    state = __assign({}, state, { settings: __assign({}, state.settings, (_e = {}, _e[key] = action.payload.setting, _e)) });
-                }
-                break;
-            }
-            case 'COMMIT_CONTEXT': {
-                var _state = state;
-                var context = action.payload.context;
-                var changes_1 = _state._context && _state._context[context] || {};
-                state = __assign({}, _state, { data: __assign({}, _state.data), _context: except(_state._context, [context]) });
-                Object.keys(changes_1).forEach(function (table) {
-                    var change = changes_1[table];
-                    var data = state.data[table];
-                    state.data[table] = {
-                        ids: data.ids.concat(change.newIds).filter(function (id) { return !change.deletedIds.includes(id); }),
-                        byId: __assign({}, data.byId)
-                    };
-                    Object.keys(change.byId).forEach(function (id) {
-                        state.data[table].byId[id] = __assign({}, state.data[table].byId[id], change.byId[id]);
-                    });
-                });
-                break;
-            }
-        }
-        return state;
-        var _a, _b, _c, _d, _e;
+        return reduce(state, action);
     };
 }
 exports.reducer = reducer;

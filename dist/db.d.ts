@@ -44,9 +44,15 @@ export interface SettingsUpdateAction {
     };
 }
 export interface CommitContextAction {
-    type: 'COMMIT_CONTEXT';
+    type: "COMMIT_CONTEXT";
     payload: {
         context: string;
+    };
+}
+export interface TransactionAction {
+    type: "TRANSACTION";
+    payload: {
+        actions: DBAction[];
     };
 }
 export interface TypeLookup {
@@ -63,10 +69,11 @@ export declare class DB<Data, Setting, Types extends TypeLookup, S extends State
     constructor(state: S, options?: {
         context?: string;
     });
-    get<K extends keyof S['settings']>(name: K): S['settings'][K];
-    set<K extends keyof S['settings'], U extends S['settings'][K]>(name: K, value: U): SettingsUpdateAction;
-    table<K extends keyof S['types']>(type: K): Table<S['types'][K]>;
+    get<K extends keyof S["settings"]>(name: K): S["settings"][K];
+    set<K extends keyof S["settings"], U extends S["settings"][K]>(name: K, value: U): SettingsUpdateAction;
+    table<K extends keyof S["types"]>(type: K): Table<S["types"][K]>;
     context(context: string): DB<Data, Setting, Types, S>;
+    transaction(execute: (dispatch: DBDispatch) => void): TransactionAction;
     commit(): CommitContextAction;
 }
 export declare type OptionalID = {
@@ -102,5 +109,7 @@ export declare class Table<T extends Record> {
     private extractIds(object);
     private applyId(record);
 }
-export declare type DBAction = UpdateAction | DeleteAction | InsertAction | SettingsUpdateAction | CommitContextAction;
+export declare type DBAction = UpdateAction | DeleteAction | InsertAction | SettingsUpdateAction | TransactionAction | CommitContextAction;
+export declare type DBDispatch = (action: DBAction) => void;
+export declare function reduce<Setting, Data, Types extends TypeLookup, S extends State<Data, Setting, Types>>(state: S, action: DBAction): S;
 export declare function reducer<Setting, Data, Types extends TypeLookup, S extends State<Data, Setting, Types>>(initialState: S): (state: S, action: DBAction) => S;
