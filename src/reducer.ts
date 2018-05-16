@@ -1,6 +1,7 @@
-import { ContextChanges, State, TypeLookup, Record } from "./db";
+import { State, TypeLookup } from "./db";
 import { DBAction } from "./actions";
-import { byId } from "./util";
+import { ContextChanges, DataTable } from "./table";
+import { byId, Record, except } from "./util";
 
 function applyInContext<S, T>(
   state: S,
