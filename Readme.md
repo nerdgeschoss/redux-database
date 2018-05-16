@@ -77,3 +77,34 @@ store.dispatch(things.insert({name: 'New Thing'})); // ids get assigned automati
 store.dispatch(things.update('1', {name: 'New Name'})); // the first parameter could be an array instead for multi updates
 store.dispatch(things.delete('1'));
 ```
+
+Writing multiple records this way will update your UI multiple times - this can lead to performance problems, especially when updating and inserting huge amounts of data. For this you can use a transaction:
+
+```ts
+store.dispatch(
+  db.transaction(dispatch => {
+    dispatch(things.insert({name: 'First Thing'}));
+    dispatch(things.insert({name: 'Second Thing'}));
+  })
+)
+```
+
+This way there is only a single action dispatched to your redux store that encapsulates all the changes.
+
+## Working with Contexts
+
+Contexts work as a scratchpad to draft changes before you commit them to the main database. You can imagine them as a writable overlay over your database:
+
+```ts
+const draftDB = db.context('draft');
+store.dispatch(draftDB.table('things').update('1', {name: 'Updated Thing'}));
+// retrieve your state again from the store
+db.table('things').first.name; // this is still 'First Thing'
+draftDB.table('things').first.name; // this is updated to 'Updated Thing'
+```
+
+When you're done with changes, you can commit them to the main store:
+
+```ts
+store.dispatch(draftDB.commit());
+```
