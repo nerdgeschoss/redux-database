@@ -178,7 +178,7 @@ export function reducer<
   Data,
   Types extends TypeLookup,
   S extends State<Data, Setting, Types>
->(initialState: S): (state: S, action: DBAction) => S {
+>(initialState: S): (state: S | null | undefined, action: DBAction) => S {
   return (state, action) => {
     if (!state) {
       state = initialState;
