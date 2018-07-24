@@ -1,12 +1,9 @@
-import { guid, Record } from './util';
+import { Record } from './util';
 import { Table } from './table';
 import {
   SettingsUpdateAction,
   TransactionAction,
   CommitContextAction,
-  InsertAction,
-  UpdateAction,
-  DeleteAction,
   DBDispatch,
   DBAction,
 } from './actions';

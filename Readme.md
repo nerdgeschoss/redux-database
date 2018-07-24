@@ -13,29 +13,29 @@ interface Thing {
 interface State {
   settings: {
     enableAwesomeThing: boolean;
-  },
+  };
   data: {
-    things: DataTable<Thing>
-  },
+    things: DataTable<Thing>;
+  };
   types: {
-    things: Thing
-  }
+    things: Thing;
+  };
 }
 
 const state: State = {
   settings: {
-    enableAwesomeThing: true
+    enableAwesomeThing: true,
   },
   data: {
     things: {
       byId: {},
-      ids: []
-    }
+      ids: [],
+    },
   },
   types: {
-    things: {} as Thing
-  }
-}
+    things: {} as Thing,
+  },
+};
 ```
 
 ## Reading Data
@@ -56,7 +56,7 @@ db.get('enableAwesomeThing'); // true
 const things = db.table('things'); // if things is not defined, you would get an error here
 things.all; // returns Thing[]
 things.find('12'); // find by id
-things.where({name: 'tool'}); // simple equality based where queries
+things.where({ name: 'tool' }); // simple equality based where queries
 things.where(thing => thing.name.length == 4); // function based where queries
 ```
 
@@ -73,8 +73,8 @@ store.dispatch(db.set('enableAwesomeThing', false));
 ### Writing Records
 
 ```ts
-store.dispatch(things.insert({name: 'New Thing'})); // ids get assigned automatically if not provided
-store.dispatch(things.update('1', {name: 'New Name'})); // the first parameter could be an array instead for multi updates
+store.dispatch(things.insert({ name: 'New Thing' })); // ids get assigned automatically if not provided
+store.dispatch(things.update('1', { name: 'New Name' })); // the first parameter could be an array instead for multi updates
 store.dispatch(things.delete('1'));
 ```
 
@@ -83,10 +83,10 @@ Writing multiple records this way will update your UI multiple times - this can 
 ```ts
 store.dispatch(
   db.transaction(dispatch => {
-    dispatch(things.insert({name: 'First Thing'}));
-    dispatch(things.insert({name: 'Second Thing'}));
+    dispatch(things.insert({ name: 'First Thing' }));
+    dispatch(things.insert({ name: 'Second Thing' }));
   })
-)
+);
 ```
 
 This way there is only a single action dispatched to your redux store that encapsulates all the changes.
@@ -97,7 +97,7 @@ Contexts work as a scratchpad to draft changes before you commit them to the mai
 
 ```ts
 const draftDB = db.context('draft');
-store.dispatch(draftDB.table('things').update('1', {name: 'Updated Thing'}));
+store.dispatch(draftDB.table('things').update('1', { name: 'Updated Thing' }));
 // retrieve your state again from the store
 db.table('things').first.name; // this is still 'First Thing'
 draftDB.table('things').first.name; // this is updated to 'Updated Thing'
@@ -107,4 +107,24 @@ When you're done with changes, you can commit them to the main store:
 
 ```ts
 store.dispatch(draftDB.commit());
+```
+
+## Mutable Databases
+
+As you've seen so far, `DB` always works on a snapshot of data, bringing it in line with Redux. Sometimes it's beneficial though to always have a getter for live data. This is where `MutableDB` comes in:
+
+```ts
+const db = new MutableDB(state);
+db.set('enableAwesomeThing', false);
+db.get('enableAwesomeThing'); // now is false
+
+const things = db.table('things');
+things.insert({ name: 'First Thing' });
+things.where({ name: 'First Thing' }); // => retrieves your record
+```
+
+This database keeps the state internal and automatically uses the included reducer. If you have a Redux store (this is completely optional in this case), you can synchronize it with the `store` option:
+
+```ts
+const db = new MutableDB(state, { store: yourReduxStore }); // automatically synchronized with the store
 ```
