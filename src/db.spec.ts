@@ -1,5 +1,5 @@
-import { DB, DataTable, reducer } from ".";
-import { expect } from "chai";
+import { DB, DataTable, reducer, DBAction } from '.';
+import { expect } from 'chai';
 
 interface Thing {
   id: string;
@@ -20,29 +20,49 @@ interface State {
 
 const state: State = {
   settings: {
-    isChecked: true
+    isChecked: true,
   },
   data: {
     things: {
       byId: {},
-      ids: []
-    }
+      ids: [],
+    },
   },
   types: {
-    things: {} as Thing
-  }
+    things: {} as Thing,
+  },
 };
 
-describe("settings", () => {
-  const db = new DB(state);
+let currentState = state;
+let dbReducer = reducer(state);
+let db = new DB(currentState);
+function dispatch(action: DBAction) {
+  currentState = dbReducer(currentState, action);
+  db = new DB(currentState);
+}
 
-  it("reads a setting", () => {
-    expect(db.get("isChecked")).to.eq(true);
+describe('settings', () => {
+  it('reads a setting', () => {
+    expect(db.get('isChecked')).to.eq(true);
   });
 
-  it("updates a setting", () => {
-    const dispatch = reducer(state);
-    const newState = dispatch(state, db.set("isChecked", false));
-    expect(new DB(newState).get("isChecked")).to.eq(false);
+  it('updates a setting', () => {
+    dispatch(db.set('isChecked', false));
+    expect(db.get('isChecked')).to.eq(false);
+  });
+});
+
+describe('tables', () => {
+  it('inserts a record and generates an id', () => {
+    db.table('things').insert({ name: 'Thing' });
+    const thing = db.table('things').first;
+    expect(thing).to.be;
+    expect(thing!!.id).to.be;
+  });
+
+  it('finds an item', () => {
+    db.table('things').insert({ name: 'My Thing' });
+    const thing = db.table('things').where({ name: 'My Thing' });
+    expect(thing).to.be;
   });
 });

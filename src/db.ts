@@ -1,5 +1,5 @@
-import { guid, Record } from "./util";
-import { Table } from "./table";
+import { guid, Record } from './util';
+import { Table } from './table';
 import {
   SettingsUpdateAction,
   TransactionAction,
@@ -8,8 +8,8 @@ import {
   UpdateAction,
   DeleteAction,
   DBDispatch,
-  DBAction
-} from "./actions";
+  DBAction,
+} from './actions';
 
 export interface TypeLookup {
   [key: string]: Record;
@@ -35,7 +35,9 @@ export class DB<
     this.currentContext = options.context;
   }
 
-  get<K extends keyof S["settings"]>(name: K): S["settings"][K] {
+  get<K extends Extract<keyof S['settings'], string>>(
+    name: K
+  ): S['settings'][K] {
     const _state = this.state as any;
     if (
       this.currentContext &&
@@ -49,21 +51,23 @@ export class DB<
     return this.state.settings[name];
   }
 
-  set<K extends keyof S["settings"], U extends S["settings"][K]>(
-    name: K,
-    value: U
-  ): SettingsUpdateAction {
+  set<
+    K extends Extract<keyof S['settings'], string>,
+    U extends S['settings'][K]
+  >(name: K, value: U): SettingsUpdateAction {
     return {
-      type: "SETTINGS_UPDATE",
+      type: 'SETTINGS_UPDATE',
       payload: {
         context: this.currentContext,
         key: name,
-        setting: value
-      }
+        setting: value,
+      },
     };
   }
 
-  table<K extends keyof S["types"]>(type: K): Table<S["types"][K]> {
+  table<K extends Extract<keyof S['types'], string>>(
+    type: K
+  ): Table<S['types'][K]> {
     const _state = this.state as any;
     const contextChanges =
       this.currentContext &&
@@ -72,7 +76,7 @@ export class DB<
       _state._context[this.currentContext][type];
     return new Table(_state.data[type], type, {
       context: this.currentContext,
-      contextChanges
+      contextChanges,
     });
   }
 
@@ -84,21 +88,21 @@ export class DB<
     const actions: DBAction[] = [];
     execute(action => actions.push(action));
     return {
-      type: "TRANSACTION",
+      type: 'TRANSACTION',
       payload: {
-        actions
-      }
+        actions,
+      },
     };
   }
 
   commit(): CommitContextAction {
     const { currentContext } = this;
     if (!currentContext) {
-      throw "Called commit on a root context.";
+      throw 'Called commit on a root context.';
     }
     return {
-      type: "COMMIT_CONTEXT",
-      payload: { context: currentContext }
+      type: 'COMMIT_CONTEXT',
+      payload: { context: currentContext },
     };
   }
 }
