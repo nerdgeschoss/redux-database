@@ -12,7 +12,7 @@ export function guid(): string {
       .toString(16)
       .substring(1);
   }
-  return [s4() + s4(), s4(), s4(), s4(), s4() + s4() + s4()].join("-");
+  return [s4() + s4(), s4(), s4(), s4(), s4() + s4() + s4()].join('-');
 }
 
 export function byId(records: Record[]): { [id: string]: Record } {
@@ -33,7 +33,7 @@ export function except(object: { [key: string]: any }, keys: string[]) {
 
 export function extractIds(object: RecordIdentifying): string[] {
   if (object === undefined) {
-    throw "Trying to insert/update record which was not saved before";
+    throw 'Trying to insert/update record which was not saved before';
   }
   let test: (string | Record)[];
   if (!(object instanceof Array)) {
@@ -41,7 +41,7 @@ export function extractIds(object: RecordIdentifying): string[] {
   } else {
     test = object;
   }
-  return test.map(e => e["id"] || e);
+  return test.map(e => e['id'] || e);
 }
 
 export function applyId<T>(record: OptionalID): T {

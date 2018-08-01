@@ -54,15 +54,19 @@ describe('settings', () => {
 
 describe('tables', () => {
   it('inserts a record and generates an id', () => {
-    db.table('things').insert({ name: 'Thing' });
+    dispatch(db.table('things').insert({ name: 'Thing' }));
     const thing = db.table('things').first;
     expect(thing).to.be;
     expect(thing!!.id).to.be;
   });
 
   it('finds an item', () => {
-    db.table('things').insert({ name: 'My Thing' });
-    const thing = db.table('things').where({ name: 'My Thing' });
+    dispatch(db.table('things').insert({ name: 'My Thing' }));
+    const thing = db.table('things').where({ name: 'My Thing' })[0];
     expect(thing).to.be;
+  });
+
+  it('returns undefined if something cant be found', () => {
+    expect(db.table('things').find('none-existing-id')).to.be.undefined;
   });
 });

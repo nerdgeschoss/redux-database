@@ -3,9 +3,9 @@ import {
   RecordIdentifying,
   OptionalID,
   applyId,
-  extractIds
-} from "./util";
-import { InsertAction, UpdateAction, DeleteAction } from "./actions";
+  extractIds,
+} from './util';
+import { InsertAction, UpdateAction, DeleteAction } from './actions';
 
 export interface DataTable<T> {
   byId: { [id: string]: T };
@@ -41,6 +41,9 @@ export class Table<T extends Record> {
     }
     const changes = (this.contextChanges && this.contextChanges.byId[id]) || {};
     const object = this.data.byId[id];
+    if (!object && Object.keys(changes).length === 0) {
+      return undefined;
+    }
     return Object.assign({}, object, changes);
   }
 
@@ -57,7 +60,7 @@ export class Table<T extends Record> {
   }
 
   where(query: ((value: T) => boolean) | Partial<T>): T[] {
-    if (typeof query === "function") {
+    if (typeof query === 'function') {
       return this.all.filter(query);
     } else {
       return this.all.filter(e => {
@@ -76,36 +79,36 @@ export class Table<T extends Record> {
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map(e => applyId(e));
     return {
-      type: "INSERT_RECORD",
+      type: 'INSERT_RECORD',
       payload: {
         key: this.key,
         context: this.context,
         ids: insertedRecords.map(e => e.id),
-        data: insertedRecords
-      }
+        data: insertedRecords,
+      },
     };
   }
 
   update(id: RecordIdentifying, values: Partial<T>): UpdateAction {
     return {
-      type: "UPDATE_RECORD",
+      type: 'UPDATE_RECORD',
       payload: {
         key: this.key,
         context: this.context,
         ids: extractIds(id),
-        data: values
-      }
+        data: values,
+      },
     };
   }
 
   delete(id: RecordIdentifying): DeleteAction {
     return {
-      type: "DELETE_RECORD",
+      type: 'DELETE_RECORD',
       payload: {
         key: this.key,
         context: this.context,
-        ids: extractIds(id)
-      }
+        ids: extractIds(id),
+      },
     };
   }
 

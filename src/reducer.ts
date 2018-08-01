@@ -1,7 +1,7 @@
-import { State, TypeLookup } from "./db";
-import { DBAction } from "./actions";
-import { ContextChanges, DataTable } from "./table";
-import { byId, Record, except } from "./util";
+import { State, TypeLookup } from './db';
+import { DBAction } from './actions';
+import { ContextChanges, DataTable } from './table';
+import { byId, Record, except } from './util';
 
 function applyInContext<S, T>(
   state: S,
@@ -20,9 +20,9 @@ function applyInContext<S, T>(
       ..._context,
       [context]: {
         ...currentContext,
-        [field]: { ...currentContext[field], ...changes }
-      }
-    }
+        [field]: { ...currentContext[field], ...changes },
+      },
+    },
   };
 }
 
@@ -33,7 +33,7 @@ export function reduce<
   S extends State<Data, Setting, Types>
 >(state: S, action: DBAction): S {
   switch (action.type) {
-    case "INSERT_RECORD": {
+    case 'INSERT_RECORD': {
       const key = action.payload.key;
       const newIDs = action.payload.ids.filter(
         id => !state.data[key].ids.includes(id)
@@ -43,46 +43,46 @@ export function reduce<
           return {
             ...changes,
             newIds: [...changes.newIds, ...newIDs],
-            byId: { ...changes.byId, ...byId(action.payload.data) }
+            byId: { ...changes.byId, ...byId(action.payload.data) },
           };
         });
       } else {
         const dataSet = {
           ...state.data[key],
           byId: { ...state.data[key].byId, ...byId(action.payload.data) },
-          ids: [...state.data[key].ids, ...newIDs]
+          ids: [...state.data[key].ids, ...newIDs],
         };
         state = {
           ...(state as any),
-          data: { ...(state.data as any), [key]: dataSet }
+          data: { ...(state.data as any), [key]: dataSet },
         };
       }
       break;
     }
-    case "DELETE_RECORD": {
+    case 'DELETE_RECORD': {
       const key = action.payload.key;
       const ids = action.payload.ids;
       if (action.payload.context) {
         state = applyInContext(state, action.payload.context, key, changes => {
           return {
             ...changes,
-            deletedIds: [...changes.deletedIds, ...ids]
+            deletedIds: [...changes.deletedIds, ...ids],
           };
         });
       } else {
         const dataSet = {
           ...state.data[key],
           byId: except(state.data[key].byId, ids),
-          ids: state.data[key].ids.filter((e: string) => !ids.includes(e))
+          ids: state.data[key].ids.filter((e: string) => !ids.includes(e)),
         };
         state = {
           ...(state as any),
-          data: { ...(state.data as any), [key]: dataSet }
+          data: { ...(state.data as any), [key]: dataSet },
         };
       }
       break;
     }
-    case "UPDATE_RECORD": {
+    case 'UPDATE_RECORD': {
       const key = action.payload.key;
       if (action.payload.context) {
         state = applyInContext(state, action.payload.context, key, changes => {
@@ -92,7 +92,7 @@ export function reduce<
           );
           return {
             ...changes,
-            byId: { ...changes.byId, ...updates }
+            byId: { ...changes.byId, ...updates },
           };
         });
       } else {
@@ -101,21 +101,21 @@ export function reduce<
           e =>
             (updates[e] = {
               ...state.data[key].byId[e],
-              ...action.payload.data
+              ...action.payload.data,
             })
         );
         const dataSet = {
           ...state.data[key],
-          byId: { ...state.data[key].byId, ...updates }
+          byId: { ...state.data[key].byId, ...updates },
         };
         state = {
           ...(state as any),
-          data: { ...(state.data as any), [key]: dataSet }
+          data: { ...(state.data as any), [key]: dataSet },
         };
       }
       break;
     }
-    case "SETTINGS_UPDATE": {
+    case 'SETTINGS_UPDATE': {
       const key = action.payload.key;
       if (action.payload.context) {
         const _state = state as any;
@@ -123,27 +123,27 @@ export function reduce<
         const currentContext = _context[action.payload.context] || {};
         state = {
           ..._state,
-          _context: { ..._context, [action.payload.context]: currentContext }
+          _context: { ..._context, [action.payload.context]: currentContext },
         };
       } else {
         state = {
           ...(state as any),
           settings: {
             ...(state.settings as any),
-            [key]: action.payload.setting
-          }
+            [key]: action.payload.setting,
+          },
         };
       }
       break;
     }
-    case "COMMIT_CONTEXT": {
+    case 'COMMIT_CONTEXT': {
       const _state = state as any;
       const context = action.payload.context;
       const changes = (_state._context && _state._context[context]) || {};
       state = {
         ..._state,
         data: { ..._state.data }, // create a new object so it's ok to modify it later
-        _context: except(_state._context, [context])
+        _context: except(_state._context, [context]),
       };
       Object.keys(changes).forEach(table => {
         const change: ContextChanges<Record> = changes[table];
@@ -152,18 +152,18 @@ export function reduce<
           ids: data.ids
             .concat(change.newIds)
             .filter(id => !change.deletedIds.includes(id)),
-          byId: { ...data.byId }
+          byId: { ...data.byId },
         };
         Object.keys(change.byId).forEach(id => {
           state.data[table].byId[id] = {
             ...state.data[table].byId[id],
-            ...change.byId[id]
+            ...change.byId[id],
           };
         });
       });
       break;
     }
-    case "TRANSACTION": {
+    case 'TRANSACTION': {
       action.payload.actions.forEach(a => {
         state = reduce(state, a);
       });

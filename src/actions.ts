@@ -1,7 +1,7 @@
-import { Record } from "./util";
+import { Record } from './util';
 
 export interface UpdateAction {
-  type: "UPDATE_RECORD";
+  type: 'UPDATE_RECORD';
   payload: {
     ids: string[];
     key: string;
@@ -11,7 +11,7 @@ export interface UpdateAction {
 }
 
 export interface InsertAction {
-  type: "INSERT_RECORD";
+  type: 'INSERT_RECORD';
   payload: {
     ids: string[];
     key: string;
@@ -21,7 +21,7 @@ export interface InsertAction {
 }
 
 export interface DeleteAction {
-  type: "DELETE_RECORD";
+  type: 'DELETE_RECORD';
   payload: {
     key: string;
     context?: string;
@@ -30,7 +30,7 @@ export interface DeleteAction {
 }
 
 export interface SettingsUpdateAction {
-  type: "SETTINGS_UPDATE";
+  type: 'SETTINGS_UPDATE';
   payload: {
     key: string;
     context?: string;
@@ -39,14 +39,14 @@ export interface SettingsUpdateAction {
 }
 
 export interface CommitContextAction {
-  type: "COMMIT_CONTEXT";
+  type: 'COMMIT_CONTEXT';
   payload: {
     context: string;
   };
 }
 
 export interface TransactionAction {
-  type: "TRANSACTION";
+  type: 'TRANSACTION';
   payload: {
     actions: DBAction[];
   };
