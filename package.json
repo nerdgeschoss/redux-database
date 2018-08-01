@@ -1,6 +1,6 @@
 {
   "name": "redux-database",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "dist/index",
   "types": "dist/index",
   "files": [
@@ -17,7 +17,7 @@
     "lint": "tslint --fix src/**/*.ts{,x}",
     "watch": "rimraf dist && tsc -w",
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
-    "release": "yarn build && yarn version --patch && git push --tags && npm publish"
+    "release": "yarn build && yarn version --patch && git push --tags && yarn publish"
   },
   "devDependencies": {
     "@types/chai": "^4.1.3",
