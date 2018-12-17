@@ -39,12 +39,12 @@ export class Table<T extends Record> {
     if (this.contextChanges && this.contextChanges.deletedIds.includes(id)) {
       return undefined;
     }
-    const changes = (this.contextChanges && this.contextChanges.byId[id]) || {};
+    const changes = this.contextChanges && this.contextChanges.byId[id];
     const object = this.data.byId[id];
-    if (!object && Object.keys(changes).length === 0) {
+    if (!object && (!changes || Object.keys(changes).length === 0)) {
       return undefined;
     }
-    return Object.assign({}, object, changes);
+    return changes ? Object.assign({}, object, changes) : object;
   }
 
   get all(): T[] {
