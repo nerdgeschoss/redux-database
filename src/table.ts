@@ -4,6 +4,7 @@ import {
   OptionalID,
   applyId,
   extractIds,
+  flatten,
 } from './util';
 import { InsertAction, UpdateAction, DeleteAction } from './actions';
 
@@ -22,12 +23,12 @@ export class Table<T extends Record> {
   private data: DataTable<T>;
   private key: string;
   private context?: string;
-  private contextChanges?: ContextChanges<T>;
+  private contextChanges?: ContextChanges<T>[];
 
   constructor(
     data: DataTable<T>,
     key: string,
-    options: { context?: string; contextChanges?: ContextChanges<T> } = {}
+    options: { context?: string; contextChanges?: ContextChanges<T>[] } = {}
   ) {
     this.data = data;
     this.key = key;
@@ -36,15 +37,17 @@ export class Table<T extends Record> {
   }
 
   find(id: string): T | undefined {
-    if (this.contextChanges && this.contextChanges.deletedIds.includes(id)) {
-      return undefined;
+    if (this.contextChanges) {
+      for (const changeSet of this.contextChanges) {
+        if (changeSet.deletedIds.includes(id)) {
+          return;
+        }
+      }
     }
-    const changes = this.contextChanges && this.contextChanges.byId[id];
+    const changes =
+      this.contextChanges && this.contextChanges.map(e => e.byId[id]);
     const object = this.data.byId[id];
-    if (!object && (!changes || Object.keys(changes).length === 0)) {
-      return undefined;
-    }
-    return changes ? Object.assign({}, object, changes) : object;
+    return changes ? Object.assign({}, object, ...changes) : object;
   }
 
   get all(): T[] {
@@ -113,9 +116,10 @@ export class Table<T extends Record> {
   }
 
   private get ids(): string[] {
-    const newIds = (this.contextChanges || { newIds: [] }).newIds as string[];
-    const deletedIds = (this.contextChanges || { deletedIds: [] })
-      .deletedIds as string[];
+    const newIds = flatten((this.contextChanges || []).map(e => e.newIds));
+    const deletedIds = flatten(
+      (this.contextChanges || []).map(e => e.deletedIds)
+    );
     return this.data.ids.concat(newIds).filter(id => !deletedIds.includes(id));
   }
 }

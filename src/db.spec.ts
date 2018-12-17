@@ -127,5 +127,74 @@ describe('a table', () => {
       const sameThing = db.table('things').last;
       expect(thing).to.equal(sameThing);
     });
+
+    it('merges a context', () => {
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert({ name: 'Thing' })
+      );
+      dispatch(db.context('context').commit());
+      expect(db.table('things').first!.name).to.eq('Thing');
+    });
+
+    it('merges a context to its parent', () => {
+      dispatch(
+        db
+          .context('context')
+          .context('nested')
+          .table('things')
+          .insert({ name: 'Thing' })
+      );
+      dispatch(
+        db
+          .context('context')
+          .context('nested')
+          .commit()
+      );
+      expect(db.table('things').first).not.to.exist;
+      expect(db.context('context').table('things').first).to.exist;
+      expect(db.context('context').table('things').first!.name).to.eq('Thing');
+    });
+
+    it('merges properties correctly', () => {
+      const id = guid();
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert({ id, name: 'Hello' })
+      );
+      dispatch(
+        db
+          .context('context')
+          .context('nested')
+          .table('things')
+          .update(id, { name: 'World' })
+      );
+      expect(
+        db
+          .context('context')
+          .context('nested')
+          .table('things').first!.name
+      ).to.eq('World');
+      expect(db.context('context').table('things').first!.name).to.eq('Hello');
+    });
+
+    it('allows the nested context to see changes of the parent', () => {
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert({ name: 'Thing' })
+      );
+      expect(
+        db
+          .context('context')
+          .context('nested')
+          .table('things').first!.name
+      ).to.eq('Thing');
+    });
   });
 });

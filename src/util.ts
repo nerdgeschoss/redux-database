@@ -51,3 +51,15 @@ export function applyId<T>(record: OptionalID): T {
   }
   return copy;
 }
+
+export function extractParentContext(context: string): string | undefined {
+  const index = context.lastIndexOf('.');
+  if (index > 1) {
+    return context.substr(0, index);
+  }
+  return;
+}
+
+export function flatten<T>(items: T[][]): T[] {
+  return items.reduce((array, item) => array.concat(item), []);
+}

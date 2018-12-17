@@ -1,7 +1,7 @@
 import { State, TypeLookup } from './db';
 import { DBAction } from './actions';
 import { ContextChanges, DataTable } from './table';
-import { byId, Record, except } from './util';
+import { byId, Record, except, extractParentContext } from './util';
 
 function applyInContext<S, T>(
   state: S,
@@ -139,28 +139,68 @@ export function reduce<
     case 'COMMIT_CONTEXT': {
       const _state = state as any;
       const context = action.payload.context;
-      const changes = (_state._context && _state._context[context]) || {};
-      state = {
-        ..._state,
-        data: { ..._state.data }, // create a new object so it's ok to modify it later
-        _context: except(_state._context, [context]),
-      };
-      Object.keys(changes).forEach(table => {
-        const change: ContextChanges<Record> = changes[table];
-        const data = state.data[table] as DataTable<Record>;
-        state.data[table] = {
-          ids: data.ids
-            .concat(change.newIds)
-            .filter(id => !change.deletedIds.includes(id)),
-          byId: { ...data.byId },
-        };
-        Object.keys(change.byId).forEach(id => {
-          state.data[table].byId[id] = {
-            ...state.data[table].byId[id],
-            ...change.byId[id],
-          };
+      const parentContext = extractParentContext(context);
+      const changes: { [table: string]: ContextChanges<Record> } =
+        (_state._context && _state._context[context]) || {};
+      if (parentContext) {
+        const parentContextChanges: {
+          [table: string]: ContextChanges<Record>;
+        } = { ..._state._context[parentContext] };
+        Object.keys(changes).forEach(table => {
+          const change = changes[table];
+          if (!parentContextChanges[table]) {
+            Object.assign(parentContextChanges, {
+              [table]: {
+                byId: {},
+                newIds: [],
+                deletedIds: [],
+              },
+            });
+          }
+          console.log(parentContextChanges);
+          const parentChange = parentContextChanges[table];
+          parentChange.newIds = [...parentChange.newIds, ...change.newIds];
+          parentChange.deletedIds = [
+            ...parentChange.deletedIds,
+            ...change.deletedIds,
+          ];
+          Object.keys(change.byId).forEach(id => {
+            parentChange.byId[id] = {
+              ...parentChange.byId[id],
+              ...change.byId[id],
+            };
+          });
         });
-      });
+        state = {
+          ..._state,
+          _context: {
+            ..._state._context,
+            [parentContext]: parentContextChanges,
+          },
+        };
+      } else {
+        state = {
+          ..._state,
+          data: { ..._state.data }, // create a new object so it's ok to modify it later
+          _context: except(_state._context, [context]),
+        };
+        Object.keys(changes).forEach(table => {
+          const change = changes[table];
+          const data = state.data[table] as DataTable<Record>;
+          state.data[table] = {
+            ids: data.ids
+              .concat(change.newIds)
+              .filter(id => !change.deletedIds.includes(id)),
+            byId: { ...data.byId },
+          };
+          Object.keys(change.byId).forEach(id => {
+            state.data[table].byId[id] = {
+              ...state.data[table].byId[id],
+              ...change.byId[id],
+            };
+          });
+        });
+      }
       break;
     }
     case 'TRANSACTION': {
