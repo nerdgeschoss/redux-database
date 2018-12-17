@@ -90,7 +90,6 @@ export class DB<
   table<K extends Extract<keyof S['types'], string>>(
     type: K
   ): Table<S['types'][K]> {
-    const _state = (this.state as any) as ContextState;
     const contextChanges = this.currentContext
       ? this.changeSetsOfContext(type, this.currentContext)
       : undefined;

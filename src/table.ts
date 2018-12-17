@@ -5,6 +5,7 @@ import {
   applyId,
   extractIds,
   flatten,
+  compact,
 } from './util';
 import { InsertAction, UpdateAction, DeleteAction } from './actions';
 
@@ -17,6 +18,12 @@ export interface ContextChanges<T> {
   byId: { [id: string]: Partial<T> };
   deletedIds: string[];
   newIds: string[];
+}
+
+export interface ObjectChanges<T> {
+  changes?: Partial<T>;
+  deleted: boolean;
+  inserted: boolean;
 }
 
 export class Table<T extends Record> {
@@ -37,12 +44,8 @@ export class Table<T extends Record> {
   }
 
   find(id: string): T | undefined {
-    if (this.contextChanges) {
-      for (const changeSet of this.contextChanges) {
-        if (changeSet.deletedIds.includes(id)) {
-          return;
-        }
-      }
+    if (!this.ids.includes(id)) {
+      return;
     }
     const changes =
       this.contextChanges && this.contextChanges.map(e => e.byId[id]);
@@ -115,11 +118,42 @@ export class Table<T extends Record> {
     };
   }
 
+  get changes(): ObjectChanges<T>[] {
+    return compact(this.ids.map(id => this.changesFor(id)));
+  }
+
+  changesFor(id: string): ObjectChanges<T> | undefined {
+    if (!this.data.ids.includes(id) && !this.newIds.includes(id)) {
+      return;
+    }
+    const deleted = this.deletedIds.includes(id);
+    const inserted = this.newIds.includes(id);
+    const changeSets = (this.contextChanges || [])
+      .map(e => e.byId[id])
+      .filter(Boolean);
+    const changes =
+      changeSets.length > 0
+        ? changeSets.reduce((obj, change) => Object.assign({}, obj, change), {})
+        : undefined;
+    return {
+      deleted,
+      inserted,
+      changes,
+    };
+  }
+
   private get ids(): string[] {
-    const newIds = flatten((this.contextChanges || []).map(e => e.newIds));
-    const deletedIds = flatten(
-      (this.contextChanges || []).map(e => e.deletedIds)
-    );
-    return this.data.ids.concat(newIds).filter(id => !deletedIds.includes(id));
+    const deletedIds = this.deletedIds;
+    return this.data.ids
+      .concat(this.newIds)
+      .filter(id => !deletedIds.includes(id));
+  }
+
+  private get newIds(): string[] {
+    return flatten((this.contextChanges || []).map(e => e.newIds));
+  }
+
+  private get deletedIds(): string[] {
+    return flatten((this.contextChanges || []).map(e => e.deletedIds));
   }
 }

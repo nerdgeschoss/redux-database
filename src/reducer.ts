@@ -157,7 +157,6 @@ export function reduce<
               },
             });
           }
-          console.log(parentContextChanges);
           const parentChange = parentContextChanges[table];
           parentChange.newIds = [...parentChange.newIds, ...change.newIds];
           parentChange.deletedIds = [

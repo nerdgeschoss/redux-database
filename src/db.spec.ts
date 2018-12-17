@@ -196,5 +196,38 @@ describe('a table', () => {
           .table('things').first!.name
       ).to.eq('Thing');
     });
+
+    it('shows the changes made to an object', () => {
+      const id = guid();
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert({ id, name: 'Thing' })
+      );
+      const changesInRoot = db.table('things').changesFor(id);
+      const changes = db
+        .context('context')
+        .table('things')
+        .changesFor(id);
+      expect(changesInRoot).not.to.exist;
+      expect(changes).to.exist;
+      expect(changes!.deleted).to.be.false;
+      expect(changes!.inserted).to.be.true;
+      expect(changes!.changes).to.exist;
+      expect(changes!.changes!.name).to.eq('Thing');
+    });
+
+    it('lists all changes of the table', () => {
+      const id = guid();
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert({ id, name: 'Thing' })
+      );
+      const changes = db.context('context').table('things').changes;
+      expect(changes).to.have.length(1);
+    });
   });
 });
