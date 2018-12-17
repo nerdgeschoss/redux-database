@@ -1,5 +1,5 @@
-import { Record } from './util';
-import { Table } from './table';
+import { Record, extractParentContext } from './util';
+import { Table, ContextChanges } from './table';
 import {
   SettingsUpdateAction,
   TransactionAction,
@@ -16,6 +16,10 @@ export interface State<Setting, Data, Types extends TypeLookup> {
   settings: Setting;
   data: Data;
   types: Types;
+}
+
+export interface ContextState {
+  _context?: { [context: string]: { [table: string]: ContextChanges<Record> } };
 }
 
 export class DB<
@@ -62,22 +66,45 @@ export class DB<
     };
   }
 
+  private changeSetsOfContext(
+    table: string,
+    context?: string
+  ): ContextChanges<Record>[] {
+    const _state = (this.state as any) as ContextState;
+    if (!context) {
+      return [];
+    }
+    if (
+      !_state._context ||
+      !_state._context[context] ||
+      !_state._context[context][table]
+    ) {
+      return this.changeSetsOfContext(table, extractParentContext(context));
+    }
+    return [
+      ...this.changeSetsOfContext(table, extractParentContext(context)),
+      _state._context[context][table],
+    ];
+  }
+
   table<K extends Extract<keyof S['types'], string>>(
     type: K
   ): Table<S['types'][K]> {
-    const _state = this.state as any;
-    const contextChanges =
-      this.currentContext &&
-      _state._context &&
-      _state._context[this.currentContext] &&
-      _state._context[this.currentContext][type];
-    return new Table(_state.data[type], type, {
+    const contextChanges = this.currentContext
+      ? this.changeSetsOfContext(type, this.currentContext)
+      : undefined;
+
+    return new Table((this.state as any).data[type], type, {
       context: this.currentContext,
       contextChanges,
     });
   }
 
   context(context: string): DB<Data, Setting, Types, S> {
+    const { currentContext } = this;
+    if (currentContext) {
+      context = currentContext + '.' + context;
+    }
     return new DB(this.state, { context });
   }
 

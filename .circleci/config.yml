@@ -1,23 +1,62 @@
-version: 2
-jobs:
-  build:
-    working_directory: ~/redux-database # directory where steps will run
+version: 2.1
+
+executors:
+  my-executor:
     docker:
       - image: circleci/node:10
+
+jobs:
+  install:
+    executor: my-executor
     steps:
       - checkout
-      - run:
-          name: update-npm 
-          command: 'sudo npm install -g npm@latest'
       - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
-      - run:
-          name: install-npm-wee
-          command: npm ci
+          name: Restore Yarn Package Cache
+          keys:
+            - yarn-packages-{{ checksum "yarn.lock" }}
+            - yarn-packages-
+      - run: yarn install
       - save_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          name: Save Yarn Package Cache
+          key: yarn-packages-{{ checksum "yarn.lock" }}
           paths:
-            - ./node_modules
-      - run:
-          name: test
-          command: npm test
+            - ~/.cache/yarn
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  lint:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - run: yarn lint
+  test:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - run: yarn test
+  build:
+    executor: my-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - run: yarn build
+
+workflows:
+  version: 2
+  test_and_release:
+    jobs:
+      - install
+      - lint:
+          requires:
+            - install
+      - test:
+          requires:
+            - install
+      - build:
+          requires:
+            - lint
+            - test

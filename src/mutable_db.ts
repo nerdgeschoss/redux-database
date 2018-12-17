@@ -101,6 +101,9 @@ export class MutableDB<
         return;
       }
       table.underlyingTable['data'] = state.data[type];
+      table.underlyingTable['contextChanges'] = this.readDB.table(type as any)[
+        'contextChanges'
+      ];
     });
     this.subscribers.forEach(e => e());
   }
