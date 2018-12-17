@@ -119,7 +119,8 @@ export class Table<T extends Record> {
   }
 
   get changes(): ObjectChanges<T>[] {
-    return compact(this.ids.map(id => this.changesFor(id)));
+    const changes = compact(this.ids.map(id => this.changesFor(id)));
+    return changes.filter(e => e.deleted || e.inserted || e.changes);
   }
 
   changesFor(id: string): ObjectChanges<T> | undefined {

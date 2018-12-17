@@ -1,5 +1,5 @@
 import { Record, RecordIdentifying, OptionalID } from './util';
-import { Table } from './table';
+import { Table, ObjectChanges } from './table';
 import { MutableDB } from '.';
 
 export class MutableTable<T extends Record> {
@@ -25,6 +25,14 @@ export class MutableTable<T extends Record> {
 
   get last(): T | undefined {
     return this.underlyingTable.last;
+  }
+
+  get changes(): ObjectChanges<T>[] {
+    return this.underlyingTable.changes;
+  }
+
+  changesFor(id: string): ObjectChanges<T> | undefined {
+    return this.underlyingTable.changesFor(id);
   }
 
   where(query: ((value: T) => boolean) | Partial<T>): T[] {

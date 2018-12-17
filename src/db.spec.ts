@@ -229,5 +229,11 @@ describe('a table', () => {
       const changes = db.context('context').table('things').changes;
       expect(changes).to.have.length(1);
     });
+
+    it('does not track changes in the root context', () => {
+      dispatch(db.table('things').insert({ name: 'Thing' }));
+      expect(db.table('things').changes).to.have.length(0);
+      expect(db.context('context').table('things').changes).to.have.length(0);
+    });
   });
 });

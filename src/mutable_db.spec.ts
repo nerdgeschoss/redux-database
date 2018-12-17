@@ -1,5 +1,6 @@
 import { MutableDB, DataTable } from '.';
 import { expect } from 'chai';
+import { guid } from './util';
 
 interface Thing {
   id: string;
@@ -35,7 +36,12 @@ const state: State = {
 
 let db = new MutableDB(state);
 
+function reset() {
+  db = new MutableDB(state);
+}
+
 describe('mutable settings', () => {
+  beforeEach(reset);
   it('reads a setting', () => {
     expect(db.get('isChecked')).to.eq(true);
   });
@@ -47,6 +53,8 @@ describe('mutable settings', () => {
 });
 
 describe('mutable tables', () => {
+  beforeEach(reset);
+
   it('inserts a record and generates an id', () => {
     db.table('things').insert({ name: 'Thing' });
     const thing = db.table('things').first;
@@ -65,5 +73,15 @@ describe('mutable tables', () => {
     const originalCount = things.all.length;
     things.insert({ name: 'Additional Thing' });
     expect(things.all.length).to.eq(originalCount + 1);
+  });
+
+  it('displays changes to an object', () => {
+    db.table('things').insert({ name: 'Thing' });
+    const things = db.context('context').table('things');
+    const id = guid();
+    things.insert({ id, name: 'Thing!' });
+    expect(things.changes).to.have.length(1);
+    const changes = things.changesFor(id)!.changes!;
+    expect(changes.name).to.eq('Thing!');
   });
 });
