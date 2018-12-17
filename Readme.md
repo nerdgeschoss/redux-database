@@ -103,10 +103,28 @@ db.table('things').first.name; // this is still 'First Thing'
 draftDB.table('things').first.name; // this is updated to 'Updated Thing'
 ```
 
+To get a list of everything that will be changed by the context, use the corresponding methods:
+
+```ts
+draftDB.table('things').changesFor('1'); // { deleted: false, inserted: false, changes: { name: 'Updated Thing' } }
+draftDB.table('things').changes; // an array of change objects for every row that has changed
+```
+
 When you're done with changes, you can commit them to the main store:
 
 ```ts
 store.dispatch(draftDB.commit());
+```
+
+You can also nest contexts and commit them to their parent context:
+
+```ts
+const draftDB = db.context('local').context('draft');
+store.dispatch(draftDB.table('things').update('1', { name: 'Updated Thing' }));
+store.dispatch(draftDB.commit());
+// retrieve your state again from the store
+db.table('things').first.name; // this is still 'First Thing'
+draftDB.context('local').table('things').first.name; // this is now the value from the nested context
 ```
 
 ## Mutable Databases
