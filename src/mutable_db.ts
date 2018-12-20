@@ -65,7 +65,11 @@ export class MutableDB<
     if (this.cachedTables[type]) {
       return this.cachedTables[type];
     } else {
-      this.cachedTables[type] = new MutableTable(this.readDB.table(type), this);
+      this.cachedTables[type] = new MutableTable(
+        this.readDB.table(type),
+        this,
+        this.dispatch
+      );
     }
     return this.cachedTables[type];
   }

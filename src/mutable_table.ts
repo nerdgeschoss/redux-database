@@ -1,14 +1,21 @@
 import { Record, RecordIdentifying, OptionalID } from './util';
 import { Table, ObjectChanges } from './table';
 import { MutableDB } from '.';
+import { DBDispatch } from './actions';
 
 export class MutableTable<T extends Record> {
   underlyingTable: Table<T>;
   db: MutableDB<any, any, any, any>;
+  dispatch: DBDispatch;
 
-  constructor(table: Table<T>, db: MutableDB<any, any, any, any>) {
+  constructor(
+    table: Table<T>,
+    db: MutableDB<any, any, any, any>,
+    dispatch: DBDispatch
+  ) {
     this.underlyingTable = table;
     this.db = db;
+    this.dispatch = dispatch;
   }
 
   find(id: string): T | undefined {
@@ -44,15 +51,15 @@ export class MutableTable<T extends Record> {
   }
 
   insert(records: OptionalID | OptionalID[]) {
-    this.db.dispatch(this.underlyingTable.insert(records));
+    this.dispatch(this.underlyingTable.insert(records));
   }
 
   update(id: RecordIdentifying, values: Partial<T>) {
-    this.db.dispatch(this.underlyingTable.update(id, values));
+    this.dispatch(this.underlyingTable.update(id, values));
   }
 
   delete(id: RecordIdentifying) {
-    this.db.dispatch(this.underlyingTable.delete(id));
+    this.dispatch(this.underlyingTable.delete(id));
   }
 
   commit(ids?: RecordIdentifying) {
