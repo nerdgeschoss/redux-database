@@ -7,7 +7,13 @@ import {
   flatten,
   compact,
 } from './util';
-import { InsertAction, UpdateAction, DeleteAction } from './actions';
+import {
+  InsertAction,
+  UpdateAction,
+  DeleteAction,
+  CommitContextAction,
+  RevertContextAction,
+} from './actions';
 
 export interface DataTable<T> {
   byId: { [id: string]: T };
@@ -118,6 +124,34 @@ export class Table<T extends Record> {
     };
   }
 
+  commit(ids?: RecordIdentifying): CommitContextAction {
+    if (!this.context) {
+      throw 'Called commit on a root context.';
+    }
+    return {
+      type: 'COMMIT_CONTEXT',
+      payload: {
+        context: this.context,
+        table: this.key,
+        ids: ids ? extractIds(ids) : undefined,
+      },
+    };
+  }
+
+  revert(ids?: RecordIdentifying): RevertContextAction {
+    if (!this.context) {
+      throw 'Called commit on a root context.';
+    }
+    return {
+      type: 'REVERT_CONTEXT',
+      payload: {
+        context: this.context,
+        table: this.key,
+        ids: ids ? extractIds(ids) : undefined,
+      },
+    };
+  }
+
   get changes(): ObjectChanges<T>[] {
     const changes = compact(this.ids.map(id => this.changesFor(id)));
     return changes.filter(e => e.deleted || e.inserted || e.changes);
@@ -143,7 +177,7 @@ export class Table<T extends Record> {
     };
   }
 
-  private get ids(): string[] {
+  get ids(): string[] {
     const deletedIds = this.deletedIds;
     return this.data.ids
       .concat(this.newIds)

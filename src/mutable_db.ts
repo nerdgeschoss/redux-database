@@ -2,6 +2,7 @@ import { MutableTable } from './mutable_table';
 import { DBDispatch, DBAction } from './actions';
 import { TypeLookup, State } from './db';
 import { reducer, DB } from '.';
+import { RecordIdentifying } from './util';
 
 interface Store<
   Data,
@@ -77,8 +78,18 @@ export class MutableDB<
     this.dispatch(this.readDB.transaction(execute));
   }
 
-  commit() {
-    this.dispatch(this.readDB.commit());
+  commit<K extends Extract<keyof S['types'], string>>(
+    table?: K,
+    ids?: RecordIdentifying
+  ) {
+    this.dispatch(this.readDB.commit(table, ids));
+  }
+
+  revert<K extends Extract<keyof S['types'], string>>(
+    table?: K,
+    ids?: RecordIdentifying
+  ) {
+    this.dispatch(this.readDB.revert(table, ids));
   }
 
   subscribe(callback: () => void) {

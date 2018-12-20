@@ -1,4 +1,4 @@
-import { State, TypeLookup } from './db';
+import { State, TypeLookup, ContextState } from './db';
 import { DBAction } from './actions';
 import { ContextChanges, DataTable } from './table';
 import { byId, Record, except, extractParentContext } from './util';
@@ -137,16 +137,26 @@ export function reduce<
       break;
     }
     case 'COMMIT_CONTEXT': {
-      const _state = state as any;
       const context = action.payload.context;
+      const tableToMerge = action.payload.table;
+      const idsToMerge = action.payload.ids;
+      const _state = (state as any) as ContextState;
+      const revertedState = (reduce(state, {
+        type: 'REVERT_CONTEXT',
+        payload: { context, table: tableToMerge, ids: idsToMerge },
+      }) as any) as ContextState;
       const parentContext = extractParentContext(context);
       const changes: { [table: string]: ContextChanges<Record> } =
         (_state._context && _state._context[context]) || {};
+
       if (parentContext) {
         const parentContextChanges: {
           [table: string]: ContextChanges<Record>;
-        } = { ..._state._context[parentContext] };
+        } = { ..._state._context![parentContext] };
         Object.keys(changes).forEach(table => {
+          if (tableToMerge && tableToMerge !== table) {
+            return;
+          }
           const change = changes[table];
           if (!parentContextChanges[table]) {
             Object.assign(parentContextChanges, {
@@ -158,12 +168,18 @@ export function reduce<
             });
           }
           const parentChange = parentContextChanges[table];
-          parentChange.newIds = [...parentChange.newIds, ...change.newIds];
+          parentChange.newIds = [
+            ...parentChange.newIds,
+            ...change.newIds.filter(e => !idsToMerge || idsToMerge.includes(e)),
+          ];
           parentChange.deletedIds = [
             ...parentChange.deletedIds,
             ...change.deletedIds,
           ];
           Object.keys(change.byId).forEach(id => {
+            if (idsToMerge && !idsToMerge.includes(id)) {
+              return;
+            }
             parentChange.byId[id] = {
               ...parentChange.byId[id],
               ...change.byId[id],
@@ -173,26 +189,36 @@ export function reduce<
         state = {
           ..._state,
           _context: {
-            ..._state._context,
+            ...revertedState._context,
             [parentContext]: parentContextChanges,
           },
-        };
+        } as any;
       } else {
         state = {
           ..._state,
-          data: { ..._state.data }, // create a new object so it's ok to modify it later
-          _context: except(_state._context, [context]),
-        };
+          data: { ...(_state as any).data }, // create a new object so it's ok to modify it later
+          _context: revertedState._context,
+        } as any;
         Object.keys(changes).forEach(table => {
+          if (tableToMerge && tableToMerge !== table) {
+            return;
+          }
           const change = changes[table];
           const data = state.data[table] as DataTable<Record>;
           state.data[table] = {
             ids: data.ids
-              .concat(change.newIds)
+              .concat(
+                change.newIds.filter(
+                  id => !idsToMerge || idsToMerge.includes(id)
+                )
+              )
               .filter(id => !change.deletedIds.includes(id)),
             byId: { ...data.byId },
           };
           Object.keys(change.byId).forEach(id => {
+            if (idsToMerge && !idsToMerge.includes(id)) {
+              return;
+            }
             state.data[table].byId[id] = {
               ...state.data[table].byId[id],
               ...change.byId[id],
@@ -200,6 +226,46 @@ export function reduce<
           });
         });
       }
+      break;
+    }
+    case 'REVERT_CONTEXT': {
+      const _state = (state as any) as ContextState;
+      const context = action.payload.context;
+      const changes: { [table: string]: ContextChanges<Record> } =
+        (_state._context && _state._context[context]) || {};
+      const tableToRevert = action.payload.table;
+      const idsToRevert = action.payload.ids;
+      let contextUpdates:
+        | { [table: string]: ContextChanges<Record> }
+        | undefined;
+      if (tableToRevert) {
+        contextUpdates = { ...changes };
+        if (idsToRevert) {
+          const contextTableChange = contextUpdates[tableToRevert];
+          const tableChanges: { [id: string]: Partial<Record> } = {};
+          Object.keys(contextTableChange.byId).forEach(id => {
+            if (idsToRevert.includes(id)) {
+              return;
+            }
+            tableChanges[id] = contextTableChange.byId[id];
+          });
+          contextUpdates[tableToRevert] = {
+            byId: tableChanges,
+            deletedIds: contextTableChange.deletedIds.filter(
+              id => !idsToRevert.includes(id)
+            ),
+            newIds: contextTableChange.newIds.filter(
+              id => !idsToRevert.includes(id)
+            ),
+          };
+        } else {
+          delete contextUpdates[tableToRevert];
+        }
+      }
+      state = {
+        ..._state,
+        _context: { ..._state._context, [context]: contextUpdates },
+      } as any;
       break;
     }
     case 'TRANSACTION': {

@@ -182,6 +182,42 @@ describe('a table', () => {
       expect(db.context('context').table('things').first!.name).to.eq('Hello');
     });
 
+    it('commits by id', () => {
+      const id = guid();
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert([{ id, name: 'Hello' }, { name: 'Another Object' }])
+      );
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .commit(id)
+      );
+      expect(db.table('things').ids).to.eql([id]);
+      expect(db.context('context').table('things').all).to.have.length(2);
+    });
+
+    it('reverts by id', () => {
+      const id = guid();
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .insert({ id, name: 'Hello' })
+      );
+      expect(db.context('context').table('things').ids).to.eql([id]);
+      dispatch(
+        db
+          .context('context')
+          .table('things')
+          .revert(id)
+      );
+      expect(db.context('context').table('things').ids).to.eql([]);
+    });
+
     it('allows the nested context to see changes of the parent', () => {
       dispatch(
         db

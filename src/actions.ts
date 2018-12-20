@@ -42,6 +42,17 @@ export interface CommitContextAction {
   type: 'COMMIT_CONTEXT';
   payload: {
     context: string;
+    table?: string;
+    ids?: string[];
+  };
+}
+
+export interface RevertContextAction {
+  type: 'REVERT_CONTEXT';
+  payload: {
+    context: string;
+    table?: string;
+    ids?: string[];
   };
 }
 
@@ -58,6 +69,7 @@ export type DBAction =
   | InsertAction
   | SettingsUpdateAction
   | TransactionAction
+  | RevertContextAction
   | CommitContextAction;
 
 export type DBDispatch = (action: DBAction) => void;

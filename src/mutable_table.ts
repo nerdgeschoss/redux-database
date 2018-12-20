@@ -31,6 +31,10 @@ export class MutableTable<T extends Record> {
     return this.underlyingTable.changes;
   }
 
+  get ids(): string[] {
+    return this.underlyingTable.ids;
+  }
+
   changesFor(id: string): ObjectChanges<T> | undefined {
     return this.underlyingTable.changesFor(id);
   }
@@ -49,5 +53,13 @@ export class MutableTable<T extends Record> {
 
   delete(id: RecordIdentifying) {
     this.db.dispatch(this.underlyingTable.delete(id));
+  }
+
+  commit(ids?: RecordIdentifying) {
+    this.underlyingTable.commit(ids);
+  }
+
+  revert(ids?: RecordIdentifying) {
+    this.underlyingTable.revert(ids);
   }
 }

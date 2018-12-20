@@ -75,6 +75,13 @@ describe('mutable tables', () => {
     expect(things.all.length).to.eq(originalCount + 1);
   });
 
+  it('has a list of ids per table', () => {
+    const id = guid();
+    const things = db.table('things');
+    things.insert({ id, name: 'Additional Thing' });
+    expect(things.ids).to.eql([id]);
+  });
+
   it('displays changes to an object', () => {
     db.table('things').insert({ name: 'Thing' });
     const things = db.context('context').table('things');

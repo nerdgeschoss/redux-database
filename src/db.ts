@@ -1,4 +1,9 @@
-import { Record, extractParentContext } from './util';
+import {
+  Record,
+  extractParentContext,
+  RecordIdentifying,
+  extractIds,
+} from './util';
 import { Table, ContextChanges } from './table';
 import {
   SettingsUpdateAction,
@@ -6,6 +11,7 @@ import {
   CommitContextAction,
   DBDispatch,
   DBAction,
+  RevertContextAction,
 } from './actions';
 
 export interface TypeLookup {
@@ -119,14 +125,39 @@ export class DB<
     };
   }
 
-  commit(): CommitContextAction {
+  commit<K extends Extract<keyof S['types'], string>>(
+    table?: K,
+    ids?: RecordIdentifying
+  ): CommitContextAction {
     const { currentContext } = this;
     if (!currentContext) {
       throw 'Called commit on a root context.';
     }
     return {
       type: 'COMMIT_CONTEXT',
-      payload: { context: currentContext },
+      payload: {
+        context: currentContext,
+        table,
+        ids: ids ? extractIds(ids) : undefined,
+      },
+    };
+  }
+
+  revert<K extends Extract<keyof S['types'], string>>(
+    table?: K,
+    ids?: RecordIdentifying
+  ): RevertContextAction {
+    const { currentContext } = this;
+    if (!currentContext) {
+      throw 'Called commit on a root context.';
+    }
+    return {
+      type: 'REVERT_CONTEXT',
+      payload: {
+        context: currentContext,
+        table,
+        ids: ids ? extractIds(ids) : undefined,
+      },
     };
   }
 }
