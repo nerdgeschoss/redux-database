@@ -59,6 +59,36 @@ export function reduce<
       }
       break;
     }
+    case 'UPSERT_RECORD': {
+      const key = action.payload.key;
+      const currentIds = new Set<string>(state.data[key].ids);
+      const context = action.payload.context;
+      const newRecords = action.payload.data.filter(e => !currentIds.has(e.id));
+      const existingRecords = action.payload.data.filter(e =>
+        currentIds.has(e.id)
+      );
+      state = reduce(state, {
+        type: 'INSERT_RECORD',
+        payload: {
+          ids: newRecords.map(e => e.id),
+          key,
+          context,
+          data: newRecords,
+        },
+      });
+      for (const record of existingRecords) {
+        state = reduce(state, {
+          type: 'UPDATE_RECORD',
+          payload: {
+            ids: [record.id],
+            key,
+            context,
+            data: record,
+          },
+        });
+      }
+      break;
+    }
     case 'DELETE_RECORD': {
       const key = action.payload.key;
       const ids = action.payload.ids;

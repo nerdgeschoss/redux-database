@@ -20,6 +20,16 @@ export interface InsertAction {
   };
 }
 
+export interface UpsertAction {
+  type: 'UPSERT_RECORD';
+  payload: {
+    ids: string[];
+    key: string;
+    context?: string;
+    data: Record[];
+  };
+}
+
 export interface DeleteAction {
   type: 'DELETE_RECORD';
   payload: {
@@ -67,6 +77,7 @@ export type DBAction =
   | UpdateAction
   | DeleteAction
   | InsertAction
+  | UpsertAction
   | SettingsUpdateAction
   | TransactionAction
   | RevertContextAction

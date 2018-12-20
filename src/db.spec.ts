@@ -79,6 +79,21 @@ describe('a table', () => {
     expect(db.table('things').find('none-existing-id')).to.be.undefined;
   });
 
+  it('upserts records', () => {
+    const id = guid();
+    dispatch(
+      db.table('things').insert([{ id, name: 'Test' }, { name: 'Another' }])
+    );
+    dispatch(
+      db.table('things').upsert([{ id, name: 'Updated' }, { name: 'Third' }])
+    );
+    expect(db.table('things').all.map(e => e.name)).to.eql([
+      'Updated',
+      'Another',
+      'Third',
+    ]);
+  });
+
   describe('with context', () => {
     it('creates entries in a new context', () => {
       dispatch(
@@ -128,148 +143,155 @@ describe('a table', () => {
       expect(thing).to.equal(sameThing);
     });
 
-    it('merges a context', () => {
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .insert({ name: 'Thing' })
-      );
-      dispatch(db.context('context').commit());
-      expect(db.table('things').first!.name).to.eq('Thing');
-    });
+    describe('merging', () => {
+      it('merges a context', () => {
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert({ name: 'Thing' })
+        );
+        dispatch(db.context('context').commit());
+        expect(db.table('things').first!.name).to.eq('Thing');
+      });
 
-    it('merges a context to its parent', () => {
-      dispatch(
-        db
-          .context('context')
-          .context('nested')
-          .table('things')
-          .insert({ name: 'Thing' })
-      );
-      dispatch(
-        db
-          .context('context')
-          .context('nested')
-          .commit()
-      );
-      expect(db.table('things').first).not.to.exist;
-      expect(db.context('context').table('things').first).to.exist;
-      expect(db.context('context').table('things').first!.name).to.eq('Thing');
-    });
+      it('merges a context to its parent', () => {
+        dispatch(
+          db
+            .context('context')
+            .context('nested')
+            .table('things')
+            .insert({ name: 'Thing' })
+        );
+        dispatch(
+          db
+            .context('context')
+            .context('nested')
+            .commit()
+        );
+        expect(db.table('things').first).not.to.exist;
+        expect(db.context('context').table('things').first).to.exist;
+        expect(db.context('context').table('things').first!.name).to.eq(
+          'Thing'
+        );
+      });
 
-    it('merges properties correctly', () => {
-      const id = guid();
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .insert({ id, name: 'Hello' })
-      );
-      dispatch(
-        db
-          .context('context')
-          .context('nested')
-          .table('things')
-          .update(id, { name: 'World' })
-      );
-      expect(
-        db
-          .context('context')
-          .context('nested')
-          .table('things').first!.name
-      ).to.eq('World');
-      expect(db.context('context').table('things').first!.name).to.eq('Hello');
-    });
+      it('merges properties correctly', () => {
+        const id = guid();
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert({ id, name: 'Hello' })
+        );
+        dispatch(
+          db
+            .context('context')
+            .context('nested')
+            .table('things')
+            .update(id, { name: 'World' })
+        );
+        expect(
+          db
+            .context('context')
+            .context('nested')
+            .table('things').first!.name
+        ).to.eq('World');
+        expect(db.context('context').table('things').first!.name).to.eq(
+          'Hello'
+        );
+      });
 
-    it('commits by id', () => {
-      const id = guid();
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .insert([{ id, name: 'Hello' }, { name: 'Another Object' }])
-      );
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .commit(id)
-      );
-      expect(db.table('things').ids).to.eql([id]);
-      expect(db.context('context').table('things').all).to.have.length(2);
-    });
+      it('commits by id', () => {
+        const id = guid();
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert([{ id, name: 'Hello' }, { name: 'Another Object' }])
+        );
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .commit(id)
+        );
+        expect(db.table('things').ids).to.eql([id]);
+        expect(db.context('context').table('things').all).to.have.length(2);
+      });
 
-    it('reverts by id', () => {
-      const id = guid();
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .insert({ id, name: 'Hello' })
-      );
-      expect(db.context('context').table('things').ids).to.eql([id]);
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .revert(id)
-      );
-      expect(db.context('context').table('things').ids).to.eql([]);
-    });
+      it('reverts by id', () => {
+        const id = guid();
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert({ id, name: 'Hello' })
+        );
+        expect(db.context('context').table('things').ids).to.eql([id]);
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .revert(id)
+        );
+        expect(db.context('context').table('things').ids).to.eql([]);
+      });
 
-    it('allows the nested context to see changes of the parent', () => {
-      dispatch(
-        db
+      it('allows the nested context to see changes of the parent', () => {
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert({ name: 'Thing' })
+        );
+        expect(
+          db
+            .context('context')
+            .context('nested')
+            .table('things').first!.name
+        ).to.eq('Thing');
+      });
+    });
+    describe('change tracking', () => {
+      it('shows the changes made to an object', () => {
+        const id = guid();
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert({ id, name: 'Thing' })
+        );
+        const changesInRoot = db.table('things').changesFor(id);
+        const changes = db
           .context('context')
           .table('things')
-          .insert({ name: 'Thing' })
-      );
-      expect(
-        db
-          .context('context')
-          .context('nested')
-          .table('things').first!.name
-      ).to.eq('Thing');
-    });
+          .changesFor(id);
+        expect(changesInRoot).not.to.exist;
+        expect(changes).to.exist;
+        expect(changes!.deleted).to.be.false;
+        expect(changes!.inserted).to.be.true;
+        expect(changes!.changes).to.exist;
+        expect(changes!.changes!.name).to.eq('Thing');
+      });
 
-    it('shows the changes made to an object', () => {
-      const id = guid();
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .insert({ id, name: 'Thing' })
-      );
-      const changesInRoot = db.table('things').changesFor(id);
-      const changes = db
-        .context('context')
-        .table('things')
-        .changesFor(id);
-      expect(changesInRoot).not.to.exist;
-      expect(changes).to.exist;
-      expect(changes!.deleted).to.be.false;
-      expect(changes!.inserted).to.be.true;
-      expect(changes!.changes).to.exist;
-      expect(changes!.changes!.name).to.eq('Thing');
-    });
+      it('lists all changes of the table', () => {
+        const id = guid();
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .insert({ id, name: 'Thing' })
+        );
+        const changes = db.context('context').table('things').changes;
+        expect(changes).to.have.length(1);
+      });
 
-    it('lists all changes of the table', () => {
-      const id = guid();
-      dispatch(
-        db
-          .context('context')
-          .table('things')
-          .insert({ id, name: 'Thing' })
-      );
-      const changes = db.context('context').table('things').changes;
-      expect(changes).to.have.length(1);
-    });
-
-    it('does not track changes in the root context', () => {
-      dispatch(db.table('things').insert({ name: 'Thing' }));
-      expect(db.table('things').changes).to.have.length(0);
-      expect(db.context('context').table('things').changes).to.have.length(0);
+      it('does not track changes in the root context', () => {
+        dispatch(db.table('things').insert({ name: 'Thing' }));
+        expect(db.table('things').changes).to.have.length(0);
+        expect(db.context('context').table('things').changes).to.have.length(0);
+      });
     });
   });
 });

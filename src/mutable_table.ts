@@ -54,6 +54,10 @@ export class MutableTable<T extends Record> {
     this.dispatch(this.underlyingTable.insert(records));
   }
 
+  upsert(records: OptionalID | OptionalID[]) {
+    this.dispatch(this.underlyingTable.upsert(records));
+  }
+
   update(id: RecordIdentifying, values: Partial<T>) {
     this.dispatch(this.underlyingTable.update(id, values));
   }

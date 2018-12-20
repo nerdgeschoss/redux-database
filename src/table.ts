@@ -13,6 +13,7 @@ import {
   DeleteAction,
   CommitContextAction,
   RevertContextAction,
+  UpsertAction,
 } from './actions';
 
 export interface DataTable<T> {
@@ -92,6 +93,21 @@ export class Table<T extends Record> {
     const insertedRecords: T[] = newRecords.map(e => applyId(e));
     return {
       type: 'INSERT_RECORD',
+      payload: {
+        key: this.key,
+        context: this.context,
+        ids: insertedRecords.map(e => e.id),
+        data: insertedRecords,
+      },
+    };
+  }
+
+  upsert(records: OptionalID | OptionalID[]): UpsertAction {
+    const newRecords: OptionalID[] =
+      records instanceof Array ? records : [records];
+    const insertedRecords: T[] = newRecords.map(e => applyId(e));
+    return {
+      type: 'UPSERT_RECORD',
       payload: {
         key: this.key,
         context: this.context,
