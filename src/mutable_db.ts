@@ -74,8 +74,12 @@ export class MutableDB<
     return new MutableDB(this.state, { context, store: this.store });
   }
 
-  transaction(execute: (dispatch: DBDispatch) => void) {
-    this.dispatch(this.readDB.transaction(execute));
+  transaction(
+    execute: (db: DB<Data, Setting, Types, S>, dispatch: DBDispatch) => void
+  ) {
+    this.dispatch(
+      this.readDB.transaction(dispatch => execute(this.readDB, dispatch))
+    );
   }
 
   commit<K extends Extract<keyof S['types'], string>>(
@@ -96,7 +100,7 @@ export class MutableDB<
     this.subscribers.push(callback);
   }
 
-  dispatch(action: DBAction) {
+  private dispatch(action: DBAction) {
     if (this.store) {
       this.store.dispatch(action);
     } else {

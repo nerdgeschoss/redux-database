@@ -91,4 +91,14 @@ describe('mutable tables', () => {
     const changes = things.changesFor(id)!.changes!;
     expect(changes.name).to.eq('Thing!');
   });
+
+  it('bundles updates in a transaction', () => {
+    let timesInvoked = 0;
+    db.subscribe(() => timesInvoked++);
+    db.transaction((readCopy, dispatch) => {
+      dispatch(readCopy.set('isChecked', true));
+      dispatch(readCopy.set('isChecked', false));
+    });
+    expect(timesInvoked).to.eq(1);
+  });
 });
