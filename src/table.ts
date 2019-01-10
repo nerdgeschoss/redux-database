@@ -28,6 +28,7 @@ export interface ContextChanges<T> {
 }
 
 export interface ObjectChanges<T> {
+  id: string;
   changes?: Partial<T>;
   deleted: boolean;
   inserted: boolean;
@@ -169,7 +170,9 @@ export class Table<T extends Record> {
   }
 
   get changes(): ObjectChanges<T>[] {
-    const changes = compact(this.ids.map(id => this.changesFor(id)));
+    const changes = compact(
+      [...this.ids, ...this.deletedIds].map(id => this.changesFor(id))
+    );
     return changes.filter(e => e.deleted || e.inserted || e.changes);
   }
 
@@ -187,6 +190,7 @@ export class Table<T extends Record> {
         ? changeSets.reduce((obj, change) => Object.assign({}, obj, change), {})
         : undefined;
     return {
+      id,
       deleted,
       inserted,
       changes,

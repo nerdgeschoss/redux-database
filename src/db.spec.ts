@@ -292,6 +292,19 @@ describe('a table', () => {
         expect(db.table('things').changes).to.have.length(0);
         expect(db.context('context').table('things').changes).to.have.length(0);
       });
+
+      it('knows about deleted records', () => {
+        const id = guid();
+        dispatch(db.table('things').insert({ id, name: 'Thing' }));
+        dispatch(
+          db
+            .context('context')
+            .table('things')
+            .delete(id)
+        );
+        const changes = db.context('context').table('things').changes;
+        expect(changes).to.have.length(1);
+      });
     });
   });
 });
