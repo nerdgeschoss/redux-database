@@ -67,10 +67,10 @@ export class MutableTable<T extends Record> {
   }
 
   commit(ids?: RecordIdentifying) {
-    this.underlyingTable.commit(ids);
+    this.dispatch(this.underlyingTable.commit(ids));
   }
 
   revert(ids?: RecordIdentifying) {
-    this.underlyingTable.revert(ids);
+    this.dispatch(this.underlyingTable.revert(ids));
   }
 }
