@@ -94,6 +94,15 @@ describe('a table', () => {
     ]);
   });
 
+  it('can update record ids', () => {
+    const id = guid();
+    const things = db.table('things');
+    dispatch(things.insert({ id, name: 'Test' }));
+    dispatch(things.update(id, { id: '1' }));
+    expect(db.table('things').find('1')).to.exist;
+    expect(db.table('things').first!.id).to.eq('1');
+  });
+
   describe('with context', () => {
     it('creates entries in a new context', () => {
       dispatch(

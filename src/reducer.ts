@@ -126,18 +126,28 @@ export function reduce<
           };
         });
       } else {
+        const updatedId = action.payload.data['id'];
         const updates: { [id: string]: Record } = {};
         action.payload.ids.forEach(
           e =>
-            (updates[e] = {
+            (updates[updatedId || e] = {
               ...state.data[key].byId[e],
               ...action.payload.data,
             })
         );
-        const dataSet = {
+        const dataSet: DataTable<Record> = {
           ...state.data[key],
           byId: { ...state.data[key].byId, ...updates },
         };
+        if (updatedId !== undefined) {
+          action.payload.ids.forEach(id => {
+            if (id === updatedId) return;
+            delete dataSet.byId[id];
+          });
+          dataSet.ids = dataSet.ids.map(
+            e => (action.payload.ids.includes(e) ? updatedId : e)
+          );
+        }
         state = {
           ...(state as any),
           data: { ...(state.data as any), [key]: dataSet },
