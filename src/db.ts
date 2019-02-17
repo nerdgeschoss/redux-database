@@ -4,7 +4,7 @@ import {
   RecordIdentifying,
   extractIds,
 } from './util';
-import { Table, ContextChanges } from './table';
+import { Table, DataTable, ContextChanges } from './table';
 import {
   SettingsUpdateAction,
   TransactionAction,
@@ -18,22 +18,20 @@ export interface TypeLookup {
   [key: string]: Record;
 }
 
-export interface State<Setting, Data, Types extends TypeLookup> {
+export interface Data {
+  [key: string]: DataTable<any>;
+}
+
+export interface State<Setting> {
   settings: Setting;
   data: Data;
-  types: Types;
 }
 
 export interface ContextState {
   _context?: { [context: string]: { [table: string]: ContextChanges<Record> } };
 }
 
-export class DB<
-  Data,
-  Setting,
-  Types extends TypeLookup,
-  S extends State<Data, Setting, Types>
-> {
+export class DB<Setting, S extends State<Setting>> {
   private state: S;
   private currentContext?: string;
 
@@ -49,7 +47,6 @@ export class DB<
     if (
       this.currentContext &&
       _state._context &&
-      _state._context[this.currentContext] &&
       _state._context[this.currentContext] &&
       _state._context[this.currentContext][name]
     ) {
@@ -93,20 +90,20 @@ export class DB<
     ];
   }
 
-  table<K extends Extract<keyof S['types'], string>>(
+  table<K extends Extract<keyof S['data'], string>>(
     type: K
-  ): Table<S['types'][K]> {
+  ): Table<S['data'][K]['byId']['someKey']> {
     const contextChanges = this.currentContext
       ? this.changeSetsOfContext(type, this.currentContext)
       : undefined;
 
-    return new Table((this.state as any).data[type], type, {
+    return new Table(this.state.data[type], type, {
       context: this.currentContext,
       contextChanges,
     });
   }
 
-  context(context: string): DB<Data, Setting, Types, S> {
+  context(context: string): DB<Setting, S> {
     const { currentContext } = this;
     if (currentContext) {
       context = currentContext + '.' + context;
@@ -125,7 +122,7 @@ export class DB<
     };
   }
 
-  commit<K extends Extract<keyof S['types'], string>>(
+  commit<K extends Extract<keyof S['data'], string>>(
     table?: K,
     ids?: RecordIdentifying
   ): CommitContextAction {
@@ -143,7 +140,7 @@ export class DB<
     };
   }
 
-  revert<K extends Extract<keyof S['types'], string>>(
+  revert<K extends Extract<keyof S['data'], string>>(
     table?: K,
     ids?: RecordIdentifying
   ): RevertContextAction {

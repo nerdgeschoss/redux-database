@@ -14,9 +14,6 @@ interface State {
   data: {
     things: DataTable<Thing>;
   };
-  types: {
-    things: Thing;
-  };
 }
 
 const state: State = {
@@ -28,9 +25,6 @@ const state: State = {
       byId: {},
       ids: [],
     },
-  },
-  types: {
-    things: {} as Thing,
   },
 };
 

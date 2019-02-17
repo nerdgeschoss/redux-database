@@ -5,14 +5,10 @@ import { DBDispatch } from './actions';
 
 export class MutableTable<T extends Record> {
   underlyingTable: Table<T>;
-  db: MutableDB<any, any, any, any>;
+  db: MutableDB<any, any>;
   dispatch: DBDispatch;
 
-  constructor(
-    table: Table<T>,
-    db: MutableDB<any, any, any, any>,
-    dispatch: DBDispatch
-  ) {
+  constructor(table: Table<T>, db: MutableDB<any, any>, dispatch: DBDispatch) {
     this.underlyingTable = table;
     this.db = db;
     this.dispatch = dispatch;

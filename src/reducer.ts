@@ -26,12 +26,10 @@ function applyInContext<S, T>(
   };
 }
 
-export function reduce<
-  Setting,
-  Data,
-  Types extends TypeLookup,
-  S extends State<Data, Setting, Types>
->(state: S, action: DBAction): S {
+export function reduce<Setting, S extends State<Setting>>(
+  state: S,
+  action: DBAction
+): S {
   switch (action.type) {
     case 'INSERT_RECORD': {
       const key = action.payload.key;
@@ -318,12 +316,9 @@ export function reduce<
   return state;
 }
 
-export function reducer<
-  Setting,
-  Data,
-  Types extends TypeLookup,
-  S extends State<Data, Setting, Types>
->(initialState: S): (state: S | null | undefined, action: DBAction) => S {
+export function reducer<Setting, S extends State<Setting>>(
+  initialState: S
+): (state: S | null | undefined, action: DBAction) => S {
   return (state, action) => {
     if (!state) {
       state = initialState;
