@@ -7,7 +7,7 @@ import { RecordIdentifying } from './util';
 interface Store<State extends StateDefining> {
   subscribe: (callback: () => void) => void;
   getState: () => State;
-  dispatch: (action: any) => void;
+  dispatch: (action: DBAction) => void;
 }
 
 export class MutableDB<State extends StateDefining> {

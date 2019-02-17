@@ -1,6 +1,6 @@
 {
   "extends": "./node_modules/@nerdgeschoss/config/tsconfig.json",
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"],
   "compilerOptions": {
     "outDir": "dist",
     "target": "ES2017",

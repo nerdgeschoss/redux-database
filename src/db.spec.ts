@@ -1,7 +1,4 @@
-/* tslint:disable:no-unused-expression */
-
 import { DB, DataTable, reducer, DBAction } from '.';
-import { expect } from 'chai';
 import { guid } from './util';
 
 interface Thing {
@@ -46,12 +43,12 @@ describe('settings', () => {
   beforeEach(reset);
 
   it('reads a setting', () => {
-    expect(db.get('isChecked')).to.eq(true);
+    expect(db.get('isChecked')).toBe(true);
   });
 
   it('updates a setting', () => {
     dispatch(db.set('isChecked', false));
-    expect(db.get('isChecked')).to.eq(false);
+    expect(db.get('isChecked')).toBe(false);
   });
 });
 
@@ -61,18 +58,18 @@ describe('a table', () => {
   it('inserts a record and generates an id', () => {
     dispatch(db.table('things').insert({ name: 'Thing' }));
     const thing = db.table('things').first;
-    expect(thing).to.be;
-    expect(thing!!.id).to.be;
+    expect(thing).toBeDefined();
+    expect(thing!!.id).toBeDefined();
   });
 
   it('finds an item', () => {
     dispatch(db.table('things').insert({ name: 'My Thing' }));
     const thing = db.table('things').where({ name: 'My Thing' })[0];
-    expect(thing).to.be;
+    expect(thing).toBeDefined();
   });
 
   it('returns undefined if something cant be found', () => {
-    expect(db.table('things').find('none-existing-id')).to.be.undefined;
+    expect(db.table('things').find('none-existing-id')).toBeUndefined();
   });
 
   it('upserts records', () => {
@@ -83,7 +80,7 @@ describe('a table', () => {
     dispatch(
       db.table('things').upsert([{ id, name: 'Updated' }, { name: 'Third' }])
     );
-    expect(db.table('things').all.map(e => e.name)).to.eql([
+    expect(db.table('things').all.map(e => e.name)).toEqual([
       'Updated',
       'Another',
       'Third',
@@ -95,8 +92,8 @@ describe('a table', () => {
     const things = db.table('things');
     dispatch(things.insert({ id, name: 'Test' }));
     dispatch(things.update(id, { id: '1' }));
-    expect(db.table('things').find('1')).to.exist;
-    expect(db.table('things').first!.id).to.eq('1');
+    expect(db.table('things').find('1')).toBeDefined();
+    expect(db.table('things').first!.id).toBe('1');
   });
 
   describe('with context', () => {
@@ -108,10 +105,12 @@ describe('a table', () => {
           .insert({ name: 'My Thing' })
       );
       const thing = db.table('things').first;
-      expect(thing).not.to.be;
+      expect(thing).not.toBeDefined();
       const contextThing = db.context('context').table('things').first;
-      expect(contextThing).to.be;
-      expect(db.context('another-context').table('things').first).not.to.be;
+      expect(contextThing).toBeDefined();
+      expect(
+        db.context('another-context').table('things').first
+      ).not.toBeDefined();
     });
 
     it('deletes things in a context', () => {
@@ -123,8 +122,8 @@ describe('a table', () => {
           .table('things')
           .delete(id)
       );
-      expect(db.table('things').first).to.be;
-      expect(db.context('context').table('things').first).not.to.be;
+      expect(db.table('things').first).toBeDefined();
+      expect(db.context('context').table('things').first).not.toBeDefined();
     });
 
     it('updates things in a context', () => {
@@ -136,8 +135,8 @@ describe('a table', () => {
           .table('things')
           .update(id, { name: 'Update' })
       );
-      expect(db.table('things').first!.name).to.eq('My Thing');
-      expect(db.context('context').table('things').first!.name).to.eq('Update');
+      expect(db.table('things').first!.name).toBe('My Thing');
+      expect(db.context('context').table('things').first!.name).toBe('Update');
     });
 
     it('keeps referential equality', () => {
@@ -145,7 +144,7 @@ describe('a table', () => {
       dispatch(db.table('things').insert({ id, name: 'My Thing' }));
       const thing = db.table('things').first;
       const sameThing = db.table('things').last;
-      expect(thing).to.equal(sameThing);
+      expect(thing).toBe(sameThing);
     });
 
     describe('merging', () => {
@@ -157,7 +156,7 @@ describe('a table', () => {
             .insert({ name: 'Thing' })
         );
         dispatch(db.context('context').commit());
-        expect(db.table('things').first!.name).to.eq('Thing');
+        expect(db.table('things').first!.name).toBe('Thing');
       });
 
       it('merges a context to its parent', () => {
@@ -174,11 +173,9 @@ describe('a table', () => {
             .context('nested')
             .commit()
         );
-        expect(db.table('things').first).not.to.exist;
-        expect(db.context('context').table('things').first).to.exist;
-        expect(db.context('context').table('things').first!.name).to.eq(
-          'Thing'
-        );
+        expect(db.table('things').first).toBeUndefined();
+        expect(db.context('context').table('things').first).toBeDefined();
+        expect(db.context('context').table('things').first!.name).toBe('Thing');
       });
 
       it('merges properties correctly', () => {
@@ -201,10 +198,8 @@ describe('a table', () => {
             .context('context')
             .context('nested')
             .table('things').first!.name
-        ).to.eq('World');
-        expect(db.context('context').table('things').first!.name).to.eq(
-          'Hello'
-        );
+        ).toBe('World');
+        expect(db.context('context').table('things').first!.name).toBe('Hello');
       });
 
       it('commits by id', () => {
@@ -221,8 +216,8 @@ describe('a table', () => {
             .table('things')
             .commit(id)
         );
-        expect(db.table('things').ids).to.eql([id]);
-        expect(db.context('context').table('things').all).to.have.length(2);
+        expect(db.table('things').ids).toEqual([id]);
+        expect(db.context('context').table('things').all.length).toBe(2);
       });
 
       it('reverts by id', () => {
@@ -233,14 +228,14 @@ describe('a table', () => {
             .table('things')
             .insert({ id, name: 'Hello' })
         );
-        expect(db.context('context').table('things').ids).to.eql([id]);
+        expect(db.context('context').table('things').ids).toEqual([id]);
         dispatch(
           db
             .context('context')
             .table('things')
             .revert(id)
         );
-        expect(db.context('context').table('things').ids).to.eql([]);
+        expect(db.context('context').table('things').ids).toEqual([]);
       });
 
       it('allows the nested context to see changes of the parent', () => {
@@ -255,7 +250,7 @@ describe('a table', () => {
             .context('context')
             .context('nested')
             .table('things').first!.name
-        ).to.eq('Thing');
+        ).toBe('Thing');
       });
     });
     describe('change tracking', () => {
@@ -272,12 +267,12 @@ describe('a table', () => {
           .context('context')
           .table('things')
           .changesFor(id);
-        expect(changesInRoot).not.to.exist;
-        expect(changes).to.exist;
-        expect(changes!.deleted).to.be.false;
-        expect(changes!.inserted).to.be.true;
-        expect(changes!.changes).to.exist;
-        expect(changes!.changes!.name).to.eq('Thing');
+        expect(changesInRoot).toBeUndefined();
+        expect(changes).toBeDefined();
+        expect(changes!.deleted).toBeFalsy();
+        expect(changes!.inserted).toBeTruthy();
+        expect(changes!.changes).toBeDefined();
+        expect(changes!.changes!.name).toBe('Thing');
       });
 
       it('lists all changes of the table', () => {
@@ -289,13 +284,13 @@ describe('a table', () => {
             .insert({ id, name: 'Thing' })
         );
         const changes = db.context('context').table('things').changes;
-        expect(changes).to.have.length(1);
+        expect(changes.length).toBe(1);
       });
 
       it('does not track changes in the root context', () => {
         dispatch(db.table('things').insert({ name: 'Thing' }));
-        expect(db.table('things').changes).to.have.length(0);
-        expect(db.context('context').table('things').changes).to.have.length(0);
+        expect(db.table('things').changes.length).toBe(0);
+        expect(db.context('context').table('things').changes.length).toBe(0);
       });
 
       it('knows about deleted records', () => {
@@ -308,7 +303,7 @@ describe('a table', () => {
             .delete(id)
         );
         const changes = db.context('context').table('things').changes;
-        expect(changes).to.have.length(1);
+        expect(changes.length).toBe(1);
       });
     });
   });

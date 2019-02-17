@@ -1,6 +1,4 @@
 {
-  "mocha.files.glob": "./src/**/*.spec.ts",
-  "mocha.requires": ["ts-node/register"],
   "editor.formatOnSave": true,
   "typescript.tsdk": "node_modules/typescript/lib"
 }
