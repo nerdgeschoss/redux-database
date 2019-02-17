@@ -38,12 +38,15 @@ export class Table<T extends Record> {
   private data: DataTable<T>;
   private key: string;
   private context?: string;
-  private contextChanges?: ContextChanges<T>[];
+  private contextChanges?: Array<ContextChanges<T>>;
 
   constructor(
     data: DataTable<T>,
     key: string,
-    options: { context?: string; contextChanges?: ContextChanges<T>[] } = {}
+    options: {
+      context?: string;
+      contextChanges?: Array<ContextChanges<T>>;
+    } = {}
   ) {
     this.data = data;
     this.key = key;
@@ -51,7 +54,7 @@ export class Table<T extends Record> {
     this.contextChanges = options.contextChanges;
   }
 
-  find(id: string): T | undefined {
+  public find(id: string): T | undefined {
     if (!this.ids.includes(id)) {
       return;
     }
@@ -61,25 +64,25 @@ export class Table<T extends Record> {
     return changes ? Object.assign({}, object, ...changes) : object;
   }
 
-  get all(): T[] {
+  public get all(): T[] {
     return this.ids.map(id => this.find(id)!);
   }
 
-  get first(): T | undefined {
+  public get first(): T | undefined {
     return this.find(this.ids[0]);
   }
 
-  get last(): T | undefined {
+  public get last(): T | undefined {
     return this.find(this.ids[this.ids.length - 1]);
   }
 
-  where(query: ((value: T) => boolean) | Partial<T>): T[] {
+  public where(query: ((value: T) => boolean) | Partial<T>): T[] {
     if (typeof query === 'function') {
       return this.all.filter(query);
     } else {
       return this.all.filter(e => {
         for (const key of Object.keys(query)) {
-          if (e[key] != query[key]) {
+          if (e[key] !== query[key]) {
             return false;
           }
         }
@@ -88,7 +91,7 @@ export class Table<T extends Record> {
     }
   }
 
-  insert(records: OptionalID | OptionalID[]): InsertAction {
+  public insert(records: OptionalID | OptionalID[]): InsertAction {
     const newRecords: OptionalID[] =
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map(e => applyId(e));
@@ -103,7 +106,7 @@ export class Table<T extends Record> {
     };
   }
 
-  upsert(records: OptionalID | OptionalID[]): UpsertAction {
+  public upsert(records: OptionalID | OptionalID[]): UpsertAction {
     const newRecords: OptionalID[] =
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map(e => applyId(e));
@@ -118,7 +121,7 @@ export class Table<T extends Record> {
     };
   }
 
-  update(id: RecordIdentifying, values: Partial<T>): UpdateAction {
+  public update(id: RecordIdentifying, values: Partial<T>): UpdateAction {
     return {
       type: 'UPDATE_RECORD',
       payload: {
@@ -130,7 +133,7 @@ export class Table<T extends Record> {
     };
   }
 
-  delete(id: RecordIdentifying): DeleteAction {
+  public delete(id: RecordIdentifying): DeleteAction {
     return {
       type: 'DELETE_RECORD',
       payload: {
@@ -141,9 +144,9 @@ export class Table<T extends Record> {
     };
   }
 
-  commit(ids?: RecordIdentifying): CommitContextAction {
+  public commit(ids?: RecordIdentifying): CommitContextAction {
     if (!this.context) {
-      throw 'Called commit on a root context.';
+      throw new Error('Called commit on a root context.');
     }
     return {
       type: 'COMMIT_CONTEXT',
@@ -155,9 +158,9 @@ export class Table<T extends Record> {
     };
   }
 
-  revert(ids?: RecordIdentifying): RevertContextAction {
+  public revert(ids?: RecordIdentifying): RevertContextAction {
     if (!this.context) {
-      throw 'Called commit on a root context.';
+      throw new Error('Called commit on a root context.');
     }
     return {
       type: 'REVERT_CONTEXT',
@@ -169,14 +172,14 @@ export class Table<T extends Record> {
     };
   }
 
-  get changes(): ObjectChanges<T>[] {
+  public get changes(): Array<ObjectChanges<T>> {
     const changes = compact(
       [...this.ids, ...this.deletedIds].map(id => this.changesFor(id))
     );
     return changes.filter(e => e.deleted || e.inserted || e.changes);
   }
 
-  changesFor(id: string): ObjectChanges<T> | undefined {
+  public changesFor(id: string): ObjectChanges<T> | undefined {
     if (!this.data.ids.includes(id) && !this.newIds.includes(id)) {
       return;
     }
@@ -197,7 +200,7 @@ export class Table<T extends Record> {
     };
   }
 
-  get ids(): string[] {
+  public get ids(): string[] {
     const deletedIds = this.deletedIds;
     return this.data.ids
       .concat(this.newIds)

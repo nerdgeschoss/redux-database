@@ -1,4 +1,4 @@
-import { State, TypeLookup, ContextState } from './db';
+import { StateDefining, ContextState } from './db';
 import { DBAction } from './actions';
 import { ContextChanges, DataTable } from './table';
 import { byId, Record, except, extractParentContext } from './util';
@@ -9,15 +9,15 @@ function applyInContext<S, T>(
   field: string,
   handler: (changes: ContextChanges<T>) => ContextChanges<T>
 ): S {
-  const _context = (state as any)._context || {};
-  let changes: ContextChanges<any> = (_context[context] &&
-    _context[context][field]) || { byId: {}, deletedIds: [], newIds: [] };
+  const contextContent = (state as any)._context || {};
+  let changes: ContextChanges<any> = (contextContent[context] &&
+    contextContent[context][field]) || { byId: {}, deletedIds: [], newIds: [] };
   changes = handler(changes);
-  const currentContext = _context[context] || {};
+  const currentContext = contextContent[context] || {};
   return {
     ...(state as any),
     _context: {
-      ..._context,
+      ...contextContent,
       [context]: {
         ...currentContext,
         [field]: { ...currentContext[field], ...changes },
@@ -26,10 +26,10 @@ function applyInContext<S, T>(
   };
 }
 
-export function reduce<Setting, S extends State<Setting>>(
-  state: S,
+export function reduce<State extends StateDefining>(
+  state: State,
   action: DBAction
-): S {
+): State {
   switch (action.type) {
     case 'INSERT_RECORD': {
       const key = action.payload.key;
@@ -139,11 +139,13 @@ export function reduce<Setting, S extends State<Setting>>(
         };
         if (updatedId !== undefined) {
           action.payload.ids.forEach(id => {
-            if (id === updatedId) return;
+            if (id === updatedId) {
+              return;
+            }
             delete dataSet.byId[id];
           });
-          dataSet.ids = dataSet.ids.map(
-            e => (action.payload.ids.includes(e) ? updatedId : e)
+          dataSet.ids = dataSet.ids.map(e =>
+            action.payload.ids.includes(e) ? updatedId : e
           );
         }
         state = {
@@ -156,12 +158,12 @@ export function reduce<Setting, S extends State<Setting>>(
     case 'SETTINGS_UPDATE': {
       const key = action.payload.key;
       if (action.payload.context) {
-        const _state = state as any;
-        const _context = _state._context || {};
-        const currentContext = _context[action.payload.context] || {};
+        const anyState = state as any;
+        const context = anyState.context || {};
+        const currentContext = context[action.payload.context] || {};
         state = {
-          ..._state,
-          _context: { ..._context, [action.payload.context]: currentContext },
+          ...anyState,
+          _context: { ...context, [action.payload.context]: currentContext },
         };
       } else {
         state = {
@@ -178,19 +180,19 @@ export function reduce<Setting, S extends State<Setting>>(
       const context = action.payload.context;
       const tableToMerge = action.payload.table;
       const idsToMerge = action.payload.ids;
-      const _state = (state as any) as ContextState;
+      const contextState = (state as any) as ContextState;
       const revertedState = (reduce(state, {
         type: 'REVERT_CONTEXT',
         payload: { context, table: tableToMerge, ids: idsToMerge },
       }) as any) as ContextState;
       const parentContext = extractParentContext(context);
       const changes: { [table: string]: ContextChanges<Record> } =
-        (_state._context && _state._context[context]) || {};
+        (contextState._context && contextState._context[context]) || {};
 
       if (parentContext) {
         const parentContextChanges: {
           [table: string]: ContextChanges<Record>;
-        } = { ..._state._context![parentContext] };
+        } = { ...contextState._context![parentContext] };
         Object.keys(changes).forEach(table => {
           if (tableToMerge && tableToMerge !== table) {
             return;
@@ -225,7 +227,7 @@ export function reduce<Setting, S extends State<Setting>>(
           });
         });
         state = {
-          ..._state,
+          ...contextState,
           _context: {
             ...revertedState._context,
             [parentContext]: parentContextChanges,
@@ -233,8 +235,8 @@ export function reduce<Setting, S extends State<Setting>>(
         } as any;
       } else {
         state = {
-          ..._state,
-          data: { ...(_state as any).data }, // create a new object so it's ok to modify it later
+          ...contextState,
+          data: { ...(contextState as any).data }, // create a new object so it's ok to modify it later
           _context: revertedState._context,
         } as any;
         Object.keys(changes).forEach(table => {
@@ -267,10 +269,10 @@ export function reduce<Setting, S extends State<Setting>>(
       break;
     }
     case 'REVERT_CONTEXT': {
-      const _state = (state as any) as ContextState;
+      const contextState = (state as any) as ContextState;
       const context = action.payload.context;
       const changes: { [table: string]: ContextChanges<Record> } =
-        (_state._context && _state._context[context]) || {};
+        (contextState._context && contextState._context[context]) || {};
       const tableToRevert = action.payload.table;
       const idsToRevert = action.payload.ids;
       let contextUpdates:
@@ -301,8 +303,8 @@ export function reduce<Setting, S extends State<Setting>>(
         }
       }
       state = {
-        ..._state,
-        _context: { ..._state._context, [context]: contextUpdates },
+        ...contextState,
+        _context: { ...contextState._context, [context]: contextUpdates },
       } as any;
       break;
     }
@@ -316,9 +318,9 @@ export function reduce<Setting, S extends State<Setting>>(
   return state;
 }
 
-export function reducer<Setting, S extends State<Setting>>(
-  initialState: S
-): (state: S | null | undefined, action: DBAction) => S {
+export function reducer<State extends StateDefining>(
+  initialState: State
+): (state: State | null | undefined, action: DBAction) => State {
   return (state, action) => {
     if (!state) {
       state = initialState;

@@ -1,30 +1,30 @@
 import { MutableTable } from './mutable_table';
 import { DBDispatch, DBAction } from './actions';
-import { State } from './db';
+import { StateDefining } from './db';
 import { reducer, DB } from '.';
 import { RecordIdentifying } from './util';
 
-interface Store<Setting, S extends State<Setting>> {
+interface Store<State extends StateDefining> {
   subscribe: (callback: () => void) => void;
-  getState: () => S;
+  getState: () => State;
   dispatch: (action: any) => void;
 }
 
-export class MutableDB<Setting, S extends State<Setting>> {
-  private state: S;
+export class MutableDB<State extends StateDefining> {
+  private state: State;
   private currentContext?: string;
   private reducer = reducer(this.state);
-  private store?: Store<Setting, S>;
-  private subscribers: (() => void)[] = [];
+  private store?: Store<State>;
+  private subscribers: Array<() => void> = [];
   private cachedTables: { [key: string]: MutableTable<any> } = {};
 
-  private get readDB(): DB<Setting, S> {
+  private get readDB(): DB<State> {
     return new DB(this.state, { context: this.currentContext });
   }
 
   constructor(
-    state: S,
-    options: { context?: string; store?: Store<Setting, S> } = {}
+    state: State,
+    options: { context?: string; store?: Store<State> } = {}
   ) {
     this.state = state;
     this.currentContext = options.context;
@@ -36,59 +36,58 @@ export class MutableDB<Setting, S extends State<Setting>> {
     }
   }
 
-  get<K extends Extract<keyof S['settings'], string>>(
+  public get<K extends Extract<keyof State['settings'], string>>(
     name: K
-  ): S['settings'][K] {
+  ): State['settings'][K] {
     return this.readDB.get(name);
   }
 
-  set<
-    K extends Extract<keyof S['settings'], string>,
-    U extends S['settings'][K]
+  public set<
+    K extends Extract<keyof State['settings'], string>,
+    U extends State['settings'][K]
   >(name: K, value: U) {
     this.dispatch(this.readDB.set(name, value));
   }
 
-  table<K extends Extract<keyof S['data'], string>>(
+  public table<K extends Extract<keyof State['data'], string>>(
     type: K
-  ): MutableTable<S['data'][K]['byId']['anyKey']> {
+  ): MutableTable<State['data'][K]['byId']['anyKey']> {
     if (this.cachedTables[type]) {
       return this.cachedTables[type];
     } else {
       this.cachedTables[type] = new MutableTable(
         this.readDB.table(type),
-        this,
         this.dispatch.bind(this)
       );
     }
     return this.cachedTables[type];
   }
 
-  context(context: string): MutableDB<Setting, S> {
+  public context(context: string): MutableDB<State> {
     return new MutableDB(this.state, { context, store: this.store });
   }
 
-  transaction(execute: (db: DB<Setting, S>, dispatch: DBDispatch) => void) {
+  public transaction(execute: (db: DB<State>, dispatch: DBDispatch) => void) {
     this.dispatch(
       this.readDB.transaction(dispatch => execute(this.readDB, dispatch))
     );
   }
 
-  commit<K extends Extract<keyof S['data'], string>>(
+  public commit<K extends Extract<keyof State['data'], string>>(
     table?: K,
     ids?: RecordIdentifying
   ) {
     this.dispatch(this.readDB.commit(table, ids));
   }
 
-  revert<K extends Extract<keyof S['data'], string>>(
+  public revert<K extends Extract<keyof State['data'], string>>(
     table?: K,
     ids?: RecordIdentifying
   ) {
     this.dispatch(this.readDB.revert(table, ids));
   }
 
-  subscribe(callback: () => void) {
+  public subscribe(callback: () => void) {
     this.subscribers.push(callback);
   }
 
@@ -100,7 +99,7 @@ export class MutableDB<Setting, S extends State<Setting>> {
     }
   }
 
-  private readState(state: S) {
+  private readState(state: State) {
     this.state = state;
     Object.keys(this.cachedTables).forEach(type => {
       const table = this.cachedTables[type];

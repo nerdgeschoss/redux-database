@@ -22,8 +22,8 @@ export interface Data {
   [key: string]: DataTable<any>;
 }
 
-export interface State<Setting> {
-  settings: Setting;
+export interface StateDefining {
+  settings: { [key: string]: any };
   data: Data;
 }
 
@@ -31,33 +31,33 @@ export interface ContextState {
   _context?: { [context: string]: { [table: string]: ContextChanges<Record> } };
 }
 
-export class DB<Setting, S extends State<Setting>> {
-  private state: S;
+export class DB<State extends StateDefining> {
+  private state: State;
   private currentContext?: string;
 
-  constructor(state: S, options: { context?: string } = {}) {
+  constructor(state: State, options: { context?: string } = {}) {
     this.state = state;
     this.currentContext = options.context;
   }
 
-  get<K extends Extract<keyof S['settings'], string>>(
+  public get<K extends Extract<keyof State['settings'], string>>(
     name: K
-  ): S['settings'][K] {
-    const _state = this.state as any;
+  ): State['settings'][K] {
+    const anyState = this.state as any;
     if (
       this.currentContext &&
-      _state._context &&
-      _state._context[this.currentContext] &&
-      _state._context[this.currentContext][name]
+      anyState._context &&
+      anyState._context[this.currentContext] &&
+      anyState._context[this.currentContext][name]
     ) {
-      return _state._context[this.currentContext][name];
+      return anyState._context[this.currentContext][name];
     }
     return this.state.settings[name];
   }
 
-  set<
-    K extends Extract<keyof S['settings'], string>,
-    U extends S['settings'][K]
+  public set<
+    K extends Extract<keyof State['settings'], string>,
+    U extends State['settings'][K]
   >(name: K, value: U): SettingsUpdateAction {
     return {
       type: 'SETTINGS_UPDATE',
@@ -69,30 +69,9 @@ export class DB<Setting, S extends State<Setting>> {
     };
   }
 
-  private changeSetsOfContext(
-    table: string,
-    context?: string
-  ): ContextChanges<Record>[] {
-    const _state = (this.state as any) as ContextState;
-    if (!context) {
-      return [];
-    }
-    if (
-      !_state._context ||
-      !_state._context[context] ||
-      !_state._context[context][table]
-    ) {
-      return this.changeSetsOfContext(table, extractParentContext(context));
-    }
-    return [
-      ...this.changeSetsOfContext(table, extractParentContext(context)),
-      _state._context[context][table],
-    ];
-  }
-
-  table<K extends Extract<keyof S['data'], string>>(
+  public table<K extends Extract<keyof State['data'], string>>(
     type: K
-  ): Table<S['data'][K]['byId']['someKey']> {
+  ): Table<State['data'][K]['byId']['someKey']> {
     const contextChanges = this.currentContext
       ? this.changeSetsOfContext(type, this.currentContext)
       : undefined;
@@ -103,7 +82,7 @@ export class DB<Setting, S extends State<Setting>> {
     });
   }
 
-  context(context: string): DB<Setting, S> {
+  public context(context: string): DB<State> {
     const { currentContext } = this;
     if (currentContext) {
       context = currentContext + '.' + context;
@@ -111,7 +90,9 @@ export class DB<Setting, S extends State<Setting>> {
     return new DB(this.state, { context });
   }
 
-  transaction(execute: (dispatch: DBDispatch) => void): TransactionAction {
+  public transaction(
+    execute: (dispatch: DBDispatch) => void
+  ): TransactionAction {
     const actions: DBAction[] = [];
     execute(action => actions.push(action));
     return {
@@ -122,13 +103,13 @@ export class DB<Setting, S extends State<Setting>> {
     };
   }
 
-  commit<K extends Extract<keyof S['data'], string>>(
+  public commit<K extends Extract<keyof State['data'], string>>(
     table?: K,
     ids?: RecordIdentifying
   ): CommitContextAction {
     const { currentContext } = this;
     if (!currentContext) {
-      throw 'Called commit on a root context.';
+      throw new Error('Called commit on a root context.');
     }
     return {
       type: 'COMMIT_CONTEXT',
@@ -140,13 +121,13 @@ export class DB<Setting, S extends State<Setting>> {
     };
   }
 
-  revert<K extends Extract<keyof S['data'], string>>(
+  public revert<K extends Extract<keyof State['data'], string>>(
     table?: K,
     ids?: RecordIdentifying
   ): RevertContextAction {
     const { currentContext } = this;
     if (!currentContext) {
-      throw 'Called commit on a root context.';
+      throw new Error('Called commit on a root context.');
     }
     return {
       type: 'REVERT_CONTEXT',
@@ -156,5 +137,26 @@ export class DB<Setting, S extends State<Setting>> {
         ids: ids ? extractIds(ids) : undefined,
       },
     };
+  }
+
+  private changeSetsOfContext(
+    table: string,
+    context?: string
+  ): Array<ContextChanges<Record>> {
+    const anyState = (this.state as any) as ContextState;
+    if (!context) {
+      return [];
+    }
+    if (
+      !anyState._context ||
+      !anyState._context[context] ||
+      !anyState._context[context][table]
+    ) {
+      return this.changeSetsOfContext(table, extractParentContext(context));
+    }
+    return [
+      ...this.changeSetsOfContext(table, extractParentContext(context)),
+      anyState._context[context][table],
+    ];
   }
 }

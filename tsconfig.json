@@ -1,19 +1,9 @@
 {
+  "extends": "./node_modules/@nerdgeschoss/config/tsconfig.json",
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "outDir": "dist",
-    "module": "commonjs",
-    "target": "es5",
-    "sourceMap": true,
-    "declaration": true,
-    "rootDir": "src",
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "noUnusedLocals": false,
-    "lib": ["es7", "dom"]
-  },
-  "exclude": ["node_modules", "dist"]
+    "target": "ES2017",
+    "rootDir": "src"
+  }
 }

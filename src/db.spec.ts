@@ -1,3 +1,5 @@
+/* tslint:disable:no-unused-expression */
+
 import { DB, DataTable, reducer, DBAction } from '.';
 import { expect } from 'chai';
 import { guid } from './util';
@@ -29,7 +31,7 @@ const state: State = {
 };
 
 let currentState = state;
-let dbReducer = reducer(state);
+const dbReducer = reducer(state);
 let db = new DB(currentState);
 function dispatch(action: DBAction) {
   currentState = dbReducer(currentState, action);

@@ -33,9 +33,11 @@ export function except(object: { [key: string]: any }, keys: string[]) {
 
 export function extractIds(object: RecordIdentifying): string[] {
   if (object === undefined) {
-    throw 'Trying to insert/update record which was not saved before';
+    throw new Error(
+      'Trying to insert/update record which was not saved before'
+    );
   }
-  let test: (string | Record)[];
+  let test: Array<string | Record>;
   if (!(object instanceof Array)) {
     test = [object];
   } else {
