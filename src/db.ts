@@ -94,7 +94,7 @@ export class DB<State extends StateDefining> {
     execute: (dispatch: DBDispatch) => void
   ): TransactionAction {
     const actions: DBAction[] = [];
-    execute(action => actions.push(action));
+    execute((action) => actions.push(action));
     return {
       type: 'TRANSACTION',
       payload: {

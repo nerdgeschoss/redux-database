@@ -59,13 +59,13 @@ export class Table<T extends Record> {
       return;
     }
     const changes =
-      this.contextChanges && this.contextChanges.map(e => e.byId[id]);
+      this.contextChanges && this.contextChanges.map((e) => e.byId[id]);
     const object = this.data.byId[id];
     return changes ? Object.assign({}, object, ...changes) : object;
   }
 
   public get all(): T[] {
-    return this.ids.map(id => this.find(id)!);
+    return this.ids.map((id) => this.find(id)!);
   }
 
   public get first(): T | undefined {
@@ -80,7 +80,7 @@ export class Table<T extends Record> {
     if (typeof query === 'function') {
       return this.all.filter(query);
     } else {
-      return this.all.filter(e => {
+      return this.all.filter((e) => {
         for (const key of Object.keys(query)) {
           if (e[key] !== query[key]) {
             return false;
@@ -94,13 +94,13 @@ export class Table<T extends Record> {
   public insert(records: OptionalID | OptionalID[]): InsertAction {
     const newRecords: OptionalID[] =
       records instanceof Array ? records : [records];
-    const insertedRecords: T[] = newRecords.map(e => applyId(e));
+    const insertedRecords: T[] = newRecords.map((e) => applyId(e));
     return {
       type: 'INSERT_RECORD',
       payload: {
         key: this.key,
         context: this.context,
-        ids: insertedRecords.map(e => e.id),
+        ids: insertedRecords.map((e) => e.id),
         data: insertedRecords,
       },
     };
@@ -109,13 +109,13 @@ export class Table<T extends Record> {
   public upsert(records: OptionalID | OptionalID[]): UpsertAction {
     const newRecords: OptionalID[] =
       records instanceof Array ? records : [records];
-    const insertedRecords: T[] = newRecords.map(e => applyId(e));
+    const insertedRecords: T[] = newRecords.map((e) => applyId(e));
     return {
       type: 'UPSERT_RECORD',
       payload: {
         key: this.key,
         context: this.context,
-        ids: insertedRecords.map(e => e.id),
+        ids: insertedRecords.map((e) => e.id),
         data: insertedRecords,
       },
     };
@@ -174,9 +174,9 @@ export class Table<T extends Record> {
 
   public get changes(): Array<ObjectChanges<T>> {
     const changes = compact(
-      [...this.ids, ...this.deletedIds].map(id => this.changesFor(id))
+      [...this.ids, ...this.deletedIds].map((id) => this.changesFor(id))
     );
-    return changes.filter(e => e.deleted || e.inserted || e.changes);
+    return changes.filter((e) => e.deleted || e.inserted || e.changes);
   }
 
   public changesFor(id: string): ObjectChanges<T> | undefined {
@@ -186,7 +186,7 @@ export class Table<T extends Record> {
     const deleted = this.deletedIds.includes(id);
     const inserted = this.newIds.includes(id);
     const changeSets = (this.contextChanges || [])
-      .map(e => e.byId[id])
+      .map((e) => e.byId[id])
       .filter(Boolean);
     const changes =
       changeSets.length > 0
@@ -204,14 +204,14 @@ export class Table<T extends Record> {
     const deletedIds = this.deletedIds;
     return this.data.ids
       .concat(this.newIds)
-      .filter(id => !deletedIds.includes(id));
+      .filter((id) => !deletedIds.includes(id));
   }
 
   private get newIds(): string[] {
-    return flatten((this.contextChanges || []).map(e => e.newIds));
+    return flatten((this.contextChanges || []).map((e) => e.newIds));
   }
 
   private get deletedIds(): string[] {
-    return flatten((this.contextChanges || []).map(e => e.deletedIds));
+    return flatten((this.contextChanges || []).map((e) => e.deletedIds));
   }
 }

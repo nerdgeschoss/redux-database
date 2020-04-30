@@ -17,13 +17,13 @@ export function guid(): string {
 
 export function byId(records: Record[]): { [id: string]: Record } {
   const map = {};
-  records.forEach(e => (map[e.id] = e));
+  records.forEach((e) => (map[e.id] = e));
   return map;
 }
 
 export function except(object: { [key: string]: any }, keys: string[]) {
   const newObject = {};
-  Object.keys(object).forEach(key => {
+  Object.keys(object).forEach((key) => {
     if (!keys.includes(key)) {
       newObject[key] = object[key];
     }
@@ -43,7 +43,7 @@ export function extractIds(object: RecordIdentifying): string[] {
   } else {
     test = object;
   }
-  return test.map(e => e['id'] || e);
+  return test.map((e) => e['id'] || e);
 }
 
 export function applyId<T>(record: OptionalID): T {
@@ -67,5 +67,5 @@ export function flatten<T>(items: T[][]): T[] {
 }
 
 export function compact<T>(items: Array<T | undefined>): T[] {
-  return items.filter(e => e !== undefined) as T[];
+  return items.filter((e) => e !== undefined) as T[];
 }
