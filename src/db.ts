@@ -14,16 +14,12 @@ import {
   RevertContextAction,
 } from './actions';
 
-export interface TypeLookup {
-  [key: string]: Record;
-}
-
 export interface Data {
-  [key: string]: DataTable<any>;
+  [key: string]: DataTable<Record>;
 }
 
 export interface StateDefining {
-  settings: { [key: string]: any };
+  settings: { [key: string]: unknown };
   data: Data;
 }
 
@@ -43,16 +39,18 @@ export class DB<State extends StateDefining> {
   public get<K extends Extract<keyof State['settings'], string>>(
     name: K
   ): State['settings'][K] {
-    const anyState = this.state as any;
+    const anyState = this.state as ContextState;
     if (
       this.currentContext &&
       anyState._context &&
       anyState._context[this.currentContext] &&
       anyState._context[this.currentContext][name]
     ) {
-      return anyState._context[this.currentContext][name];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return anyState._context[this.currentContext][name] as any;
     }
-    return this.state.settings[name];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.state.settings[name] as any;
   }
 
   public set<
@@ -79,7 +77,8 @@ export class DB<State extends StateDefining> {
     return new Table(this.state.data[type], type, {
       context: this.currentContext,
       contextChanges,
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
   }
 
   public context(context: string): DB<State> {
@@ -94,7 +93,7 @@ export class DB<State extends StateDefining> {
     execute: (dispatch: DBDispatch) => void
   ): TransactionAction {
     const actions: DBAction[] = [];
-    execute(action => actions.push(action));
+    execute((action) => actions.push(action));
     return {
       type: 'TRANSACTION',
       payload: {
@@ -143,7 +142,7 @@ export class DB<State extends StateDefining> {
     table: string,
     context?: string
   ): Array<ContextChanges<Record>> {
-    const anyState = (this.state as any) as ContextState;
+    const anyState = this.state as ContextState;
     if (!context) {
       return [];
     }

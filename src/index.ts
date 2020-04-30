@@ -1,7 +1,6 @@
-import { DB } from './db';
-import { MutableDB } from './mutable_db';
-import { DataTable } from './table';
-import { DBAction } from './actions';
-import { reducer } from './reducer';
-
-export { DB, DBAction, reducer, DataTable, MutableDB };
+export { DB } from './db';
+export { MutableDB } from './mutable_db';
+export type { DataTable } from './table';
+export type { DBAction } from './actions';
+export { reducer } from './reducer';
+export { guid, emptyTable } from './util';

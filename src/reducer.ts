@@ -3,19 +3,19 @@ import { DBAction } from './actions';
 import { ContextChanges, DataTable } from './table';
 import { byId, Record, except, extractParentContext } from './util';
 
-function applyInContext<S, T>(
-  state: S,
+function applyInContext<State, T>(
+  state: State,
   context: string,
   field: string,
   handler: (changes: ContextChanges<T>) => ContextChanges<T>
-): S {
-  const contextContent = (state as any)._context || {};
-  let changes: ContextChanges<any> = (contextContent[context] &&
+): State {
+  const contextContent = (state as ContextState)._context || {};
+  let changes: ContextChanges<unknown> = (contextContent[context] &&
     contextContent[context][field]) || { byId: {}, deletedIds: [], newIds: [] };
   changes = handler(changes);
   const currentContext = contextContent[context] || {};
   return {
-    ...(state as any),
+    ...state,
     _context: {
       ...contextContent,
       [context]: {
@@ -34,16 +34,21 @@ export function reduce<State extends StateDefining>(
     case 'INSERT_RECORD': {
       const key = action.payload.key;
       const newIDs = action.payload.ids.filter(
-        id => !state.data[key].ids.includes(id)
+        (id) => !state.data[key].ids.includes(id)
       );
       if (action.payload.context) {
-        state = applyInContext(state, action.payload.context, key, changes => {
-          return {
-            ...changes,
-            newIds: [...changes.newIds, ...newIDs],
-            byId: { ...changes.byId, ...byId(action.payload.data) },
-          };
-        });
+        state = applyInContext(
+          state,
+          action.payload.context,
+          key,
+          (changes) => {
+            return {
+              ...changes,
+              newIds: [...changes.newIds, ...newIDs],
+              byId: { ...changes.byId, ...byId(action.payload.data) },
+            };
+          }
+        );
       } else {
         const dataSet = {
           ...state.data[key],
@@ -51,8 +56,8 @@ export function reduce<State extends StateDefining>(
           ids: [...state.data[key].ids, ...newIDs],
         };
         state = {
-          ...(state as any),
-          data: { ...(state.data as any), [key]: dataSet },
+          ...state,
+          data: { ...state.data, [key]: dataSet },
         };
       }
       break;
@@ -61,14 +66,16 @@ export function reduce<State extends StateDefining>(
       const key = action.payload.key;
       const currentIds = new Set<string>(state.data[key].ids);
       const context = action.payload.context;
-      const newRecords = action.payload.data.filter(e => !currentIds.has(e.id));
-      const existingRecords = action.payload.data.filter(e =>
+      const newRecords = action.payload.data.filter(
+        (e) => !currentIds.has(e.id)
+      );
+      const existingRecords = action.payload.data.filter((e) =>
         currentIds.has(e.id)
       );
       state = reduce(state, {
         type: 'INSERT_RECORD',
         payload: {
-          ids: newRecords.map(e => e.id),
+          ids: newRecords.map((e) => e.id),
           key,
           context,
           data: newRecords,
@@ -91,21 +98,27 @@ export function reduce<State extends StateDefining>(
       const key = action.payload.key;
       const ids = action.payload.ids;
       if (action.payload.context) {
-        state = applyInContext(state, action.payload.context, key, changes => {
-          return {
-            ...changes,
-            deletedIds: [...changes.deletedIds, ...ids],
-          };
-        });
+        state = applyInContext(
+          state,
+          action.payload.context,
+          key,
+          (changes) => {
+            return {
+              ...changes,
+              deletedIds: [...changes.deletedIds, ...ids],
+            };
+          }
+        );
       } else {
         const dataSet = {
           ...state.data[key],
-          byId: except(state.data[key].byId, ids),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          byId: except(state.data[key].byId, ids as any),
           ids: state.data[key].ids.filter((e: string) => !ids.includes(e)),
         };
         state = {
-          ...(state as any),
-          data: { ...(state.data as any), [key]: dataSet },
+          ...state,
+          data: { ...state.data, [key]: dataSet },
         };
       }
       break;
@@ -113,21 +126,27 @@ export function reduce<State extends StateDefining>(
     case 'UPDATE_RECORD': {
       const key = action.payload.key;
       if (action.payload.context) {
-        state = applyInContext(state, action.payload.context, key, changes => {
-          const updates: { [id: string]: Partial<Record> } = {};
-          action.payload.ids.forEach(
-            e => (updates[e] = { ...changes.byId[e], ...action.payload.data })
-          );
-          return {
-            ...changes,
-            byId: { ...changes.byId, ...updates },
-          };
-        });
+        state = applyInContext(
+          state,
+          action.payload.context,
+          key,
+          (changes) => {
+            const updates: { [id: string]: Partial<Record> } = {};
+            action.payload.ids.forEach(
+              (e) =>
+                (updates[e] = { ...changes.byId[e], ...action.payload.data })
+            );
+            return {
+              ...changes,
+              byId: { ...changes.byId, ...updates },
+            };
+          }
+        );
       } else {
         const updatedId = action.payload.data['id'];
         const updates: { [id: string]: Record } = {};
         action.payload.ids.forEach(
-          e =>
+          (e) =>
             (updates[updatedId || e] = {
               ...state.data[key].byId[e],
               ...action.payload.data,
@@ -138,19 +157,19 @@ export function reduce<State extends StateDefining>(
           byId: { ...state.data[key].byId, ...updates },
         };
         if (updatedId !== undefined) {
-          action.payload.ids.forEach(id => {
+          action.payload.ids.forEach((id) => {
             if (id === updatedId) {
               return;
             }
             delete dataSet.byId[id];
           });
-          dataSet.ids = dataSet.ids.map(e =>
+          dataSet.ids = dataSet.ids.map((e) =>
             action.payload.ids.includes(e) ? updatedId : e
           );
         }
         state = {
-          ...(state as any),
-          data: { ...(state.data as any), [key]: dataSet },
+          ...state,
+          data: { ...state.data, [key]: dataSet },
         };
       }
       break;
@@ -158,18 +177,18 @@ export function reduce<State extends StateDefining>(
     case 'SETTINGS_UPDATE': {
       const key = action.payload.key;
       if (action.payload.context) {
-        const anyState = state as any;
-        const context = anyState.context || {};
+        const contextState = state as ContextState;
+        const context = contextState._context || {};
         const currentContext = context[action.payload.context] || {};
         state = {
-          ...anyState,
+          ...state,
           _context: { ...context, [action.payload.context]: currentContext },
         };
       } else {
         state = {
-          ...(state as any),
+          ...state,
           settings: {
-            ...(state.settings as any),
+            ...state.settings,
             [key]: action.payload.setting,
           },
         };
@@ -180,11 +199,11 @@ export function reduce<State extends StateDefining>(
       const context = action.payload.context;
       const tableToMerge = action.payload.table;
       const idsToMerge = action.payload.ids;
-      const contextState = (state as any) as ContextState;
-      const revertedState = (reduce(state, {
+      const contextState = state as ContextState;
+      const revertedState = reduce(state, {
         type: 'REVERT_CONTEXT',
         payload: { context, table: tableToMerge, ids: idsToMerge },
-      }) as any) as ContextState;
+      }) as ContextState;
       const parentContext = extractParentContext(context);
       const changes: { [table: string]: ContextChanges<Record> } =
         (contextState._context && contextState._context[context]) || {};
@@ -193,7 +212,7 @@ export function reduce<State extends StateDefining>(
         const parentContextChanges: {
           [table: string]: ContextChanges<Record>;
         } = { ...contextState._context![parentContext] };
-        Object.keys(changes).forEach(table => {
+        Object.keys(changes).forEach((table) => {
           if (tableToMerge && tableToMerge !== table) {
             return;
           }
@@ -210,13 +229,15 @@ export function reduce<State extends StateDefining>(
           const parentChange = parentContextChanges[table];
           parentChange.newIds = [
             ...parentChange.newIds,
-            ...change.newIds.filter(e => !idsToMerge || idsToMerge.includes(e)),
+            ...change.newIds.filter(
+              (e) => !idsToMerge || idsToMerge.includes(e)
+            ),
           ];
           parentChange.deletedIds = [
             ...parentChange.deletedIds,
             ...change.deletedIds,
           ];
-          Object.keys(change.byId).forEach(id => {
+          Object.keys(change.byId).forEach((id) => {
             if (idsToMerge && !idsToMerge.includes(id)) {
               return;
             }
@@ -227,19 +248,19 @@ export function reduce<State extends StateDefining>(
           });
         });
         state = {
-          ...contextState,
+          ...state,
           _context: {
             ...revertedState._context,
             [parentContext]: parentContextChanges,
           },
-        } as any;
+        };
       } else {
         state = {
-          ...contextState,
-          data: { ...(contextState as any).data }, // create a new object so it's ok to modify it later
+          ...state,
+          data: { ...state.data }, // create a new object so it's ok to modify it later
           _context: revertedState._context,
-        } as any;
-        Object.keys(changes).forEach(table => {
+        };
+        Object.keys(changes).forEach((table) => {
           if (tableToMerge && tableToMerge !== table) {
             return;
           }
@@ -249,13 +270,13 @@ export function reduce<State extends StateDefining>(
             ids: data.ids
               .concat(
                 change.newIds.filter(
-                  id => !idsToMerge || idsToMerge.includes(id)
+                  (id) => !idsToMerge || idsToMerge.includes(id)
                 )
               )
-              .filter(id => !change.deletedIds.includes(id)),
+              .filter((id) => !change.deletedIds.includes(id)),
             byId: { ...data.byId },
           };
-          Object.keys(change.byId).forEach(id => {
+          Object.keys(change.byId).forEach((id) => {
             if (idsToMerge && !idsToMerge.includes(id)) {
               return;
             }
@@ -269,7 +290,7 @@ export function reduce<State extends StateDefining>(
       break;
     }
     case 'REVERT_CONTEXT': {
-      const contextState = (state as any) as ContextState;
+      const contextState = state as ContextState;
       const context = action.payload.context;
       const changes: { [table: string]: ContextChanges<Record> } =
         (contextState._context && contextState._context[context]) || {};
@@ -283,7 +304,7 @@ export function reduce<State extends StateDefining>(
         if (idsToRevert) {
           const contextTableChange = contextUpdates[tableToRevert];
           const tableChanges: { [id: string]: Partial<Record> } = {};
-          Object.keys(contextTableChange.byId).forEach(id => {
+          Object.keys(contextTableChange.byId).forEach((id) => {
             if (idsToRevert.includes(id)) {
               return;
             }
@@ -292,10 +313,10 @@ export function reduce<State extends StateDefining>(
           contextUpdates[tableToRevert] = {
             byId: tableChanges,
             deletedIds: contextTableChange.deletedIds.filter(
-              id => !idsToRevert.includes(id)
+              (id) => !idsToRevert.includes(id)
             ),
             newIds: contextTableChange.newIds.filter(
-              id => !idsToRevert.includes(id)
+              (id) => !idsToRevert.includes(id)
             ),
           };
         } else {
@@ -303,13 +324,13 @@ export function reduce<State extends StateDefining>(
         }
       }
       state = {
-        ...contextState,
+        ...state,
         _context: { ...contextState._context, [context]: contextUpdates },
-      } as any;
+      };
       break;
     }
     case 'TRANSACTION': {
-      action.payload.actions.forEach(a => {
+      action.payload.actions.forEach((a) => {
         state = reduce(state, a);
       });
       break;

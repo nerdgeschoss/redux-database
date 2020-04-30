@@ -1,10 +1,19 @@
-export type OptionalID = { id?: string } & { [key: string]: any };
+export type OptionalID = { id?: string };
+export type InsertRecord<T extends Record> = { id?: string } & Omit<T, 'id'>;
+export type RecordInsertionList<T extends Record> =
+  | InsertRecord<T>
+  | Array<InsertRecord<T>>;
 
 export interface Record {
   id: string;
 }
 
 export type RecordIdentifying = string | string[] | Record | Record[];
+
+export const emptyTable = Object.freeze({
+  byId: {},
+  ids: [],
+});
 
 export function guid(): string {
   function s4(): string {
@@ -17,17 +26,24 @@ export function guid(): string {
 
 export function byId(records: Record[]): { [id: string]: Record } {
   const map = {};
-  records.forEach(e => (map[e.id] = e));
+  records.forEach((e) => (map[e.id] = e));
   return map;
 }
 
-export function except(object: { [key: string]: any }, keys: string[]) {
-  const newObject = {};
-  Object.keys(object).forEach(key => {
-    if (!keys.includes(key)) {
+export function except<T extends {}, Key extends [...(keyof T)[]]>(
+  object: T,
+  keys: Key[]
+): { [K2 in Exclude<keyof T, Key[number]>]: T[K2] } {
+  const newObject = {} as {
+    [K in keyof typeof object]: typeof object[K];
+  };
+  let key: keyof typeof object;
+  for (key in object) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!keys.includes(key as any)) {
       newObject[key] = object[key];
     }
-  });
+  }
   return newObject;
 }
 
@@ -43,7 +59,7 @@ export function extractIds(object: RecordIdentifying): string[] {
   } else {
     test = object;
   }
-  return test.map(e => e['id'] || e);
+  return test.map((e) => e['id'] || e);
 }
 
 export function applyId<T>(record: OptionalID): T {
@@ -67,5 +83,5 @@ export function flatten<T>(items: T[][]): T[] {
 }
 
 export function compact<T>(items: Array<T | undefined>): T[] {
-  return items.filter(e => e !== undefined) as T[];
+  return items.filter((e) => e !== undefined) as T[];
 }

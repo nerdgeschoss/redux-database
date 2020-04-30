@@ -1,4 +1,4 @@
-import { Record, RecordIdentifying, OptionalID } from './util';
+import { Record, RecordIdentifying, RecordInsertionList } from './util';
 import { Table, ObjectChanges } from './table';
 import { DBDispatch } from './actions';
 
@@ -43,27 +43,27 @@ export class MutableTable<T extends Record> {
     return this.underlyingTable.where(query);
   }
 
-  public insert(records: OptionalID | OptionalID[]) {
+  public insert(records: RecordInsertionList<T>): void {
     this.dispatch(this.underlyingTable.insert(records));
   }
 
-  public upsert(records: OptionalID | OptionalID[]) {
+  public upsert(records: RecordInsertionList<T>): void {
     this.dispatch(this.underlyingTable.upsert(records));
   }
 
-  public update(id: RecordIdentifying, values: Partial<T>) {
+  public update(id: RecordIdentifying, values: Partial<T>): void {
     this.dispatch(this.underlyingTable.update(id, values));
   }
 
-  public delete(id: RecordIdentifying) {
+  public delete(id: RecordIdentifying): void {
     this.dispatch(this.underlyingTable.delete(id));
   }
 
-  public commit(ids?: RecordIdentifying) {
+  public commit(ids?: RecordIdentifying): void {
     this.dispatch(this.underlyingTable.commit(ids));
   }
 
-  public revert(ids?: RecordIdentifying) {
+  public revert(ids?: RecordIdentifying): void {
     this.dispatch(this.underlyingTable.revert(ids));
   }
 }
