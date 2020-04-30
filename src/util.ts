@@ -1,10 +1,19 @@
-export type OptionalID = { id?: string } & { [key: string]: unknown };
+export type OptionalID = { id?: string };
+export type InsertRecord<T extends Record> = { id?: string } & Omit<T, 'id'>;
+export type RecordInsertionList<T extends Record> =
+  | InsertRecord<T>
+  | Array<InsertRecord<T>>;
 
 export interface Record {
   id: string;
 }
 
 export type RecordIdentifying = string | string[] | Record | Record[];
+
+export const emptyTable = Object.freeze({
+  byId: {},
+  ids: [],
+});
 
 export function guid(): string {
   function s4(): string {

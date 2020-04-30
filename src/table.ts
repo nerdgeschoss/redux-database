@@ -1,11 +1,12 @@
 import {
   Record,
   RecordIdentifying,
-  OptionalID,
   applyId,
   extractIds,
   flatten,
   compact,
+  InsertRecord,
+  RecordInsertionList,
 } from './util';
 import {
   InsertAction,
@@ -91,8 +92,8 @@ export class Table<T extends Record> {
     }
   }
 
-  public insert(records: OptionalID | OptionalID[]): InsertAction {
-    const newRecords: OptionalID[] =
+  public insert(records: RecordInsertionList<T>): InsertAction {
+    const newRecords: InsertRecord<T>[] =
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map((e) => applyId(e));
     return {
@@ -106,8 +107,8 @@ export class Table<T extends Record> {
     };
   }
 
-  public upsert(records: OptionalID | OptionalID[]): UpsertAction {
-    const newRecords: OptionalID[] =
+  public upsert(records: RecordInsertionList<T>): UpsertAction {
+    const newRecords: InsertRecord<T>[] =
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map((e) => applyId(e));
     return {

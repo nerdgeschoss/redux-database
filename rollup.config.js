@@ -6,8 +6,6 @@ import pkg from './package.json';
 
 const extensions = ['.ts'];
 
-const name = 'ReduxDatabase';
-
 export default {
   input: './src/index.ts',
   external: [],
@@ -28,12 +26,6 @@ export default {
     {
       file: pkg.module,
       format: 'es',
-    },
-    {
-      file: pkg.browser,
-      format: 'iife',
-      name,
-      globals: {},
     },
   ],
 };

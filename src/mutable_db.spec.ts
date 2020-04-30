@@ -1,5 +1,5 @@
 import { MutableDB, DataTable } from '.';
-import { guid } from './util';
+import { guid, emptyTable } from './util';
 
 interface Thing {
   id: string;
@@ -20,10 +20,7 @@ const state: State = {
     isChecked: true,
   },
   data: {
-    things: {
-      byId: {},
-      ids: [],
-    },
+    things: emptyTable,
   },
 };
 

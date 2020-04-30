@@ -3,7 +3,6 @@
   "version": "0.0.17",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
   "types": "dist/index",
   "files": [
     "dist"
@@ -22,7 +21,6 @@
     "lint:types": "tsc --noEmit",
     "lint:style": "eslint './src/**/*.{tsx,ts}' --max-warnings 0",
     "lint:format": "prettier --check \"**/*.{js, json}\"",
-    "watch": "rimraf dist && tsc -w",
     "test": "jest",
     "release": "yarn build && yarn version --patch && git push --tags && yarn publish --non-interactive"
   },
