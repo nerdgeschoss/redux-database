@@ -44,7 +44,7 @@ export interface SettingsUpdateAction {
   payload: {
     key: string;
     context?: string;
-    setting: any;
+    setting: unknown;
   };
 }
 

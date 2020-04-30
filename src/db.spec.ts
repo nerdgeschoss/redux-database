@@ -30,11 +30,11 @@ const state: State = {
 let currentState = state;
 const dbReducer = reducer(state);
 let db = new DB(currentState);
-function dispatch(action: DBAction) {
+function dispatch(action: DBAction): void {
   currentState = dbReducer(currentState, action);
   db = new DB(currentState);
 }
-function reset() {
+function reset(): void {
   currentState = state;
   db = new DB(currentState);
 }

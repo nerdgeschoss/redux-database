@@ -1,4 +1,4 @@
-export type OptionalID = { id?: string } & { [key: string]: any };
+export type OptionalID = { id?: string } & { [key: string]: unknown };
 
 export interface Record {
   id: string;
@@ -21,13 +21,20 @@ export function byId(records: Record[]): { [id: string]: Record } {
   return map;
 }
 
-export function except(object: { [key: string]: any }, keys: string[]) {
-  const newObject = {};
-  Object.keys(object).forEach((key) => {
-    if (!keys.includes(key)) {
+export function except<T extends {}, Key extends [...(keyof T)[]]>(
+  object: T,
+  keys: Key[]
+): { [K2 in Exclude<keyof T, Key[number]>]: T[K2] } {
+  const newObject = {} as {
+    [K in keyof typeof object]: typeof object[K];
+  };
+  let key: keyof typeof object;
+  for (key in object) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!keys.includes(key as any)) {
       newObject[key] = object[key];
     }
-  });
+  }
   return newObject;
 }
 

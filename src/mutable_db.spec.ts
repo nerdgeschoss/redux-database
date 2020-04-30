@@ -29,7 +29,7 @@ const state: State = {
 
 let db = new MutableDB(state);
 
-function reset() {
+function reset(): void {
   db = new MutableDB(state);
 }
 

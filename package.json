@@ -17,11 +17,11 @@
     "build": "yarn build:js && yarn build:types",
     "build:js": "NODE_ENV=production rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
-    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx}\"",
     "lint": "yarn lint:types && yarn lint:style && yarn lint:format",
     "lint:types": "tsc --noEmit",
     "lint:style": "eslint './src/**/*.{tsx,ts}' --max-warnings 0",
-    "lint:format": "prettier --list-different \"src/**/*.{json}\"",
+    "lint:format": "prettier --check \"**/*.{js, json}\"",
     "watch": "rimraf dist && tsc -w",
     "test": "jest",
     "release": "yarn build && yarn version --patch && git push --tags && yarn publish --non-interactive"
