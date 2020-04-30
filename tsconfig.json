@@ -1,10 +1,29 @@
 {
-  "extends": "./node_modules/@nerdgeschoss/config/tsconfig.json",
-  "exclude": ["node_modules", "dist", "**/*.spec.ts"],
   "compilerOptions": {
     "outDir": "dist",
-    "target": "ES2017",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react",
+    "lib": ["es2019"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "rootDir": "src",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "target": "esnext",
+    "isolatedModules": true,
     "declaration": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"],
+  "include": ["typings.d.ts"],
+  "files": ["src/index.ts"]
 }
