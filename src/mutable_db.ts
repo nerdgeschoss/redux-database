@@ -5,6 +5,7 @@ import type { StateDefining } from './db';
 import type { RowIdentififying } from './util';
 import { reducer as defaultReducer } from './reducer';
 import type { Row } from './util';
+import { Query } from './query';
 
 interface Store<State extends StateDefining> {
   subscribe: (callback: () => void) => void;
@@ -19,9 +20,7 @@ export class MutableDB<State extends StateDefining> {
   private store?: Store<State>;
   private subscribers: Array<() => void>;
   private cachedTables: { [key: string]: MutableTable<Row> };
-  private get readDB(): DB<State> {
-    return new DB(this.state, { context: this.currentContext });
-  }
+
   constructor(
     state: State,
     options: { context?: string; store?: Store<State> } = {}
@@ -39,17 +38,21 @@ export class MutableDB<State extends StateDefining> {
     }
   }
 
+  public get snapshot(): DB<State> {
+    return new DB(this.state, { context: this.currentContext });
+  }
+
   public get<K extends Extract<keyof State['settings'], string>>(
     name: K
   ): State['settings'][K] {
-    return this.readDB.get(name);
+    return this.snapshot.get(name);
   }
 
   public set<
     K extends Extract<keyof State['settings'], string>,
     U extends State['settings'][K]
   >(name: K, value: U): void {
-    this.dispatch(this.readDB.set(name, value));
+    this.dispatch(this.snapshot.set(name, value));
   }
 
   public table<K extends Extract<keyof State['data'], string>>(
@@ -60,13 +63,25 @@ export class MutableDB<State extends StateDefining> {
       return this.cachedTables[type] as any;
     } else {
       this.cachedTables[type] = new MutableTable(
-        this.readDB.table(type),
+        this.snapshot.table(type),
         this.dispatch.bind(this)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as any;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.cachedTables[type] as any;
+  }
+
+  public query<Key extends Extract<keyof State['data'], string>>(
+    type: Key
+  ): Query<
+    State,
+    Key,
+    State['data'][Key]['byId']['someKey'],
+    State['data'][Key]['byId']['someKey']
+  > {
+    const db = this.snapshot;
+    return new Query(db, db.table(type));
   }
 
   public context(context: string): MutableDB<State> {
@@ -77,7 +92,7 @@ export class MutableDB<State extends StateDefining> {
     execute: (db: DB<State>, dispatch: DBDispatch) => void
   ): void {
     this.dispatch(
-      this.readDB.transaction((dispatch) => execute(this.readDB, dispatch))
+      this.snapshot.transaction((dispatch) => execute(this.snapshot, dispatch))
     );
   }
 
@@ -85,14 +100,14 @@ export class MutableDB<State extends StateDefining> {
     table?: K,
     ids?: RowIdentififying
   ): void {
-    this.dispatch(this.readDB.commit(table, ids));
+    this.dispatch(this.snapshot.commit(table, ids));
   }
 
   public revert<K extends Extract<keyof State['data'], string>>(
     table?: K,
     ids?: RowIdentififying
   ): void {
-    this.dispatch(this.readDB.revert(table, ids));
+    this.dispatch(this.snapshot.revert(table, ids));
   }
 
   public subscribe(callback: () => void): void {
@@ -115,7 +130,7 @@ export class MutableDB<State extends StateDefining> {
         return;
       }
       table.underlyingTable['data'] = state.data[type];
-      table.underlyingTable['contextChanges'] = this.readDB.table(
+      table.underlyingTable['contextChanges'] = this.snapshot.table(
         type as Extract<keyof State['data'], string>
       )['contextChanges'];
     });

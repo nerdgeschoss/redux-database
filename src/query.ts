@@ -7,6 +7,7 @@ import {
   SortDescriptor,
   order,
   pick,
+  compact,
 } from './util';
 
 export class Query<
@@ -59,7 +60,6 @@ export class Query<
     return this.queryFromResults(results);
   }
 
-  // owner', 'users', 'ownerId'
   public embed<
     Key extends string,
     SecondaryTable extends Extract<keyof State['data'], string>,
@@ -79,6 +79,28 @@ export class Query<
       const embed = e[source]
         ? this.db.table(table).find((e[source] as unknown) as string)
         : undefined;
+      return {
+        ...e,
+        [key]: embed,
+      };
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.queryFromResults(results as any);
+  }
+
+  public embedMulti<
+    Key extends string,
+    SecondaryTable extends Extract<keyof State['data'], string>,
+    JoinKey extends keyof T,
+    Embed = State['data'][SecondaryTable]['byId']['any']
+  >(
+    key: Key,
+    table: SecondaryTable,
+    source: JoinKey
+  ): Query<State, TableKey, OriginalRowType, T & Record<Key, Embed[]>> {
+    const results = this.all.map((e) => {
+      const ids = (e[source] || []) as string[];
+      const embed = compact(ids.map((id) => this.db.table(table).find(id)));
       return {
         ...e,
         [key]: embed,

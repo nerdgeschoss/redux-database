@@ -30,6 +30,14 @@ function reset(): void {
   db = new MutableDB(state);
 }
 
+describe('reading', () => {
+  it('returns a static snapshot of the data', () => {
+    const snapshot = db.snapshot;
+    db.set('isChecked', false);
+    expect(snapshot.get('isChecked')).toBeTruthy();
+  });
+});
+
 describe('mutable settings', () => {
   beforeEach(reset);
   it('reads a setting', () => {

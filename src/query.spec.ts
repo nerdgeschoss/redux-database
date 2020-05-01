@@ -1,5 +1,6 @@
-import { DB, DataTable, reducer, DBAction } from '.';
-import { emptyTable } from './util';
+import { DB, DataTable } from '.';
+import { formatResultToTableData } from './util';
+import { MutableDB } from './mutable_db';
 
 interface Thing {
   id: string;
@@ -17,9 +18,7 @@ interface User {
 }
 
 interface State {
-  settings: {
-    isChecked: boolean;
-  };
+  settings: {};
   data: {
     things: DataTable<Thing>;
     users: DataTable<User>;
@@ -27,33 +26,9 @@ interface State {
 }
 
 const state: State = {
-  settings: {
-    isChecked: true,
-  },
+  settings: {},
   data: {
-    things: emptyTable,
-    users: emptyTable,
-  },
-};
-
-let currentState = state;
-const dbReducer = reducer(state);
-let db = new DB(currentState);
-function dispatch(action: DBAction): void {
-  currentState = dbReducer(currentState, action);
-  db = new DB(currentState);
-}
-function reset(): void {
-  currentState = state;
-  db = new DB(currentState);
-  dispatch(
-    db.table('users').insert([
-      { id: '10', name: 'John', favoriteThingIds: ['1', '2'] },
-      { id: '20', name: 'Jack' },
-    ])
-  );
-  dispatch(
-    db.table('things').insert([
+    things: formatResultToTableData([
       {
         id: '1',
         name: 'Hello World',
@@ -63,13 +38,18 @@ function reset(): void {
         revisedById: '20',
       },
       { id: '2', name: 'Last Entry', age: 5, ownerId: '20' },
-    ])
-  );
-}
+    ]),
+    users: formatResultToTableData([
+      { id: '10', name: 'John', favoriteThingIds: ['1', '2'] },
+      { id: '20', name: 'Jack' },
+    ]),
+  },
+};
+
+const db = new DB(state);
+const mutableDB = new MutableDB(state);
 
 describe('chainable queries', () => {
-  beforeEach(reset);
-
   it('gets a single entry from a query', () => {
     const thing = db.query('things').first;
     expect(thing?.name).toEqual('Hello World');
@@ -128,6 +108,20 @@ describe('chainable queries', () => {
         .all;
       expect(thing[0].revisor?.name).toEqual('Jack');
       expect(thing[1].revisor).toBeUndefined();
+    });
+
+    it('embeds collections of objects by key', () => {
+      const users = db
+        .query('users')
+        .embedMulti('favoriteThings', 'things', 'favoriteThingIds').all;
+      expect(users[0].favoriteThings.length).toEqual(2);
+      expect(users[1].favoriteThings.length).toEqual(0);
+    });
+  });
+
+  describe('on mutable data', () => {
+    it('returns the same query interface', () => {
+      expect(mutableDB.query('users').select('id').first).toEqual({ id: '10' });
     });
   });
 });
