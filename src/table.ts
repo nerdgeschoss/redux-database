@@ -55,6 +55,10 @@ export class Table<T extends Record> {
     this.contextChanges = options.contextChanges;
   }
 
+  public get name(): string {
+    return this.key;
+  }
+
   public find(id: string): T | undefined {
     if (!this.ids.includes(id)) {
       return;

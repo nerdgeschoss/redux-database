@@ -19,11 +19,11 @@
     "strict": true,
     "strictNullChecks": true,
     "suppressImplicitAnyIndexErrors": true,
-    "target": "esnext",
+    "target": "es2020",
     "isolatedModules": true,
     "declaration": true
   },
-  "exclude": ["node_modules", "dist", "**/*.spec.ts"],
-  "include": ["typings.d.ts"],
+  "exclude": ["node_modules", "dist"],
+  "include": ["typings.d.ts", "src/**/*.spec.ts"],
   "files": ["src/index.ts"]
 }

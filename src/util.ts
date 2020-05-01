@@ -1,3 +1,5 @@
+import { DataTable } from './table';
+
 export type OptionalID = { id?: string };
 export type InsertRecord<T extends Record> = { id?: string } & Omit<T, 'id'>;
 export type RecordInsertionList<T extends Record> =
@@ -28,6 +30,18 @@ export function byId(records: Record[]): { [id: string]: Record } {
   const map = {};
   records.forEach((e) => (map[e.id] = e));
   return map;
+}
+
+export function pick<T extends {}, K extends keyof T>(
+  obj: T,
+  ...keys: K[]
+): Pick<T, K> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ret: any = {};
+  keys.forEach((key) => {
+    ret[key] = obj[key];
+  });
+  return ret;
 }
 
 export function except<T extends {}, Key extends [...(keyof T)[]]>(
@@ -84,4 +98,65 @@ export function flatten<T>(items: T[][]): T[] {
 
 export function compact<T>(items: Array<T | undefined>): T[] {
   return items.filter((e) => e !== undefined) as T[];
+}
+
+export function formatResultToTableData<RowType extends Record>(
+  results: RowType[]
+): DataTable<RowType> {
+  const ids: string[] = [];
+  const byId = {};
+  for (const result of results) {
+    ids.push(result.id);
+    byId[result.id] = result;
+  }
+  return {
+    ids,
+    byId,
+  };
+}
+
+export function orderBy<T extends {}, Key extends keyof T>(
+  elements: T[],
+  key: Key,
+  order: 'asc' | 'desc' = 'asc'
+): T[] {
+  return elements.concat().sort((a, b) => {
+    if (!a.hasOwnProperty(key) || !b.hasOwnProperty(key)) {
+      return 0;
+    }
+    const varA = a[key];
+    const varB = b[key];
+
+    let comparison = 0;
+    if (varA > varB) {
+      comparison = 1;
+    } else if (varA < varB) {
+      comparison = -1;
+    }
+    return order === 'desc' ? comparison * -1 : comparison;
+  });
+}
+
+type SimpleSortDescriptor<T> = keyof T;
+
+type DetailedSortDescriptor<T> = {
+  [P in keyof T]?: 'asc' | 'desc';
+};
+
+export type SortDescriptor<T> =
+  | SimpleSortDescriptor<T>
+  | DetailedSortDescriptor<T>;
+
+export function order<T extends {}>(
+  elements: T[],
+  sortDescriptor: SortDescriptor<T>
+): T[] {
+  if (typeof sortDescriptor === 'string') {
+    elements = orderBy(elements, sortDescriptor);
+  } else {
+    Object.keys(sortDescriptor).forEach((key) => {
+      elements = orderBy(elements, key as keyof T, sortDescriptor[key]);
+    });
+  }
+  return elements;
 }

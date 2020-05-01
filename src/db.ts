@@ -13,6 +13,7 @@ import {
   DBAction,
   RevertContextAction,
 } from './actions';
+import { Query } from './query';
 
 export interface Data {
   [key: string]: DataTable<Record>;
@@ -79,6 +80,17 @@ export class DB<State extends StateDefining> {
       contextChanges,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
+  }
+
+  public query<Key extends Extract<keyof State['data'], string>>(
+    type: Key
+  ): Query<
+    State,
+    Key,
+    State['data'][Key]['byId']['someKey'],
+    State['data'][Key]['byId']['someKey']
+  > {
+    return new Query(this, this.table(type));
   }
 
   public context(context: string): DB<State> {
