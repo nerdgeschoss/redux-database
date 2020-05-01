@@ -100,6 +100,13 @@ export function compact<T>(items: Array<T | undefined>): T[] {
   return items.filter((e) => e !== undefined) as T[];
 }
 
+export function removeByValue<T>(array: Array<T>, element: T): void {
+  const index = array.indexOf(element);
+  if (index !== -1) {
+    array.splice(index, 1);
+  }
+}
+
 export function formatResultToTableData<RowType extends Row>(
   results: RowType[]
 ): DataTable<RowType> {
@@ -159,4 +166,10 @@ export function order<T extends {}>(
     });
   }
   return elements;
+}
+
+export function deepEqual<T>(a: T, b: T): boolean {
+  // even though it seems counterintuitive, stringify is extremely fast and even faster than most js
+  // implementations of deep equal.
+  return JSON.stringify(a) === JSON.stringify(b);
 }

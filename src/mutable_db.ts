@@ -2,10 +2,11 @@ import { MutableTable } from './mutable_table';
 import type { DBDispatch, DBAction } from './actions';
 import { DB } from './db';
 import type { StateDefining } from './db';
-import type { RowIdentififying } from './util';
+import { RowIdentififying, removeByValue } from './util';
 import { reducer as defaultReducer } from './reducer';
 import type { Row } from './util';
 import { Query } from './query';
+import { Subscription } from './subscription';
 
 interface Store<State extends StateDefining> {
   subscribe: (callback: () => void) => void;
@@ -18,7 +19,7 @@ export class MutableDB<State extends StateDefining> {
   private currentContext?: string;
   private reducer: (state: State, action: DBAction) => State;
   private store?: Store<State>;
-  private subscribers: Array<() => void>;
+  private subscribers: Array<(action: DBAction) => void>;
   private cachedTables: { [key: string]: MutableTable<Row> };
 
   constructor(
@@ -110,8 +111,15 @@ export class MutableDB<State extends StateDefining> {
     this.dispatch(this.snapshot.revert(table, ids));
   }
 
-  public subscribe(callback: () => void): void {
+  public subscribe(callback: (action: DBAction) => void): () => void {
     this.subscribers.push(callback);
+    return () => {
+      removeByValue(this.subscribers, callback);
+    };
+  }
+
+  public observe<T>(query: (db: DB<State>) => T): Subscription<State, T> {
+    return new Subscription(this, query);
   }
 
   private dispatch(action: DBAction): void {
@@ -120,6 +128,7 @@ export class MutableDB<State extends StateDefining> {
     } else {
       this.readState(this.reducer(this.state, action));
     }
+    this.subscribers.forEach((e) => e(action));
   }
 
   private readState(state: State): void {
@@ -134,6 +143,5 @@ export class MutableDB<State extends StateDefining> {
         type as Extract<keyof State['data'], string>
       )['contextChanges'];
     });
-    this.subscribers.forEach((e) => e());
   }
 }
