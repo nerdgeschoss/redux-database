@@ -85,6 +85,20 @@ describe('chainable queries', () => {
     });
   });
 
+  describe('limiting results', () => {
+    it('counts results', () => {
+      expect(db.query('things').length).toEqual(2);
+    });
+
+    it('limits results to a given number', () => {
+      expect(db.query('things').limit(1).length).toEqual(1);
+    });
+
+    it('offsets by a given number', () => {
+      expect(db.query('things').offset(1).length).toEqual(1);
+    });
+  });
+
   describe('selecting from results', () => {
     it('selects a subset of keys', () => {
       const ageMap = db.query('things').select('age', 'color').first;
@@ -93,6 +107,10 @@ describe('chainable queries', () => {
         age: 20,
         color: 'red',
       });
+    });
+
+    it('finds a specifc record from the result set', () => {
+      expect(db.query('things').select('id').find('2')).toEqual({ id: '2' });
     });
   });
 

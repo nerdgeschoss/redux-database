@@ -31,8 +31,16 @@ export class Query<
     return this.table.last;
   }
 
+  public find(id: string): T | undefined {
+    return this.table.find(id);
+  }
+
   public get all(): T[] {
     return this.table.all;
+  }
+
+  public get length(): number {
+    return this.table.ids.length;
   }
 
   public select<K extends keyof T>(
@@ -50,6 +58,16 @@ export class Query<
     query: ((value: T) => boolean) | Partial<T>
   ): Query<State, TableKey, OriginalRowType, T> {
     const results = this.table.where(query);
+    return this.queryFromResults(results);
+  }
+
+  public limit(amount: number): Query<State, TableKey, OriginalRowType, T> {
+    const results = this.all.slice(0, amount);
+    return this.queryFromResults(results);
+  }
+
+  public offset(amount: number): Query<State, TableKey, OriginalRowType, T> {
+    const results = this.all.slice(amount);
     return this.queryFromResults(results);
   }
 
