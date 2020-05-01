@@ -1,12 +1,12 @@
 import {
-  Record,
-  RecordIdentifying,
+  Row,
+  RowIdentififying,
   applyId,
   extractIds,
   flatten,
   compact,
   InsertRecord,
-  RecordInsertionList,
+  RowInsertionList,
 } from './util';
 import {
   InsertAction,
@@ -35,7 +35,7 @@ export interface ObjectChanges<T> {
   inserted: boolean;
 }
 
-export class Table<T extends Record> {
+export class Table<T extends Row> {
   private data: DataTable<T>;
   private key: string;
   private context?: string;
@@ -96,7 +96,7 @@ export class Table<T extends Record> {
     }
   }
 
-  public insert(records: RecordInsertionList<T>): InsertAction {
+  public insert(records: RowInsertionList<T>): InsertAction {
     const newRecords: InsertRecord<T>[] =
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map((e) => applyId(e));
@@ -111,7 +111,7 @@ export class Table<T extends Record> {
     };
   }
 
-  public upsert(records: RecordInsertionList<T>): UpsertAction {
+  public upsert(records: RowInsertionList<T>): UpsertAction {
     const newRecords: InsertRecord<T>[] =
       records instanceof Array ? records : [records];
     const insertedRecords: T[] = newRecords.map((e) => applyId(e));
@@ -126,7 +126,7 @@ export class Table<T extends Record> {
     };
   }
 
-  public update(id: RecordIdentifying, values: Partial<T>): UpdateAction {
+  public update(id: RowIdentififying, values: Partial<T>): UpdateAction {
     return {
       type: 'UPDATE_RECORD',
       payload: {
@@ -138,7 +138,7 @@ export class Table<T extends Record> {
     };
   }
 
-  public delete(id: RecordIdentifying): DeleteAction {
+  public delete(id: RowIdentififying): DeleteAction {
     return {
       type: 'DELETE_RECORD',
       payload: {
@@ -149,7 +149,7 @@ export class Table<T extends Record> {
     };
   }
 
-  public commit(ids?: RecordIdentifying): CommitContextAction {
+  public commit(ids?: RowIdentififying): CommitContextAction {
     if (!this.context) {
       throw new Error('Called commit on a root context.');
     }
@@ -163,7 +163,7 @@ export class Table<T extends Record> {
     };
   }
 
-  public revert(ids?: RecordIdentifying): RevertContextAction {
+  public revert(ids?: RowIdentififying): RevertContextAction {
     if (!this.context) {
       throw new Error('Called commit on a root context.');
     }

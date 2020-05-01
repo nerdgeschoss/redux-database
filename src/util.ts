@@ -1,16 +1,16 @@
 import { DataTable } from './table';
 
 export type OptionalID = { id?: string };
-export type InsertRecord<T extends Record> = { id?: string } & Omit<T, 'id'>;
-export type RecordInsertionList<T extends Record> =
+export type InsertRecord<T extends Row> = { id?: string } & Omit<T, 'id'>;
+export type RowInsertionList<T extends Row> =
   | InsertRecord<T>
   | Array<InsertRecord<T>>;
 
-export interface Record {
+export interface Row {
   id: string;
 }
 
-export type RecordIdentifying = string | string[] | Record | Record[];
+export type RowIdentififying = string | string[] | Row | Row[];
 
 export const emptyTable = Object.freeze({
   byId: {},
@@ -26,7 +26,7 @@ export function guid(): string {
   return [s4() + s4(), s4(), s4(), s4(), s4() + s4() + s4()].join('-');
 }
 
-export function byId(records: Record[]): { [id: string]: Record } {
+export function byId(records: Row[]): { [id: string]: Row } {
   const map = {};
   records.forEach((e) => (map[e.id] = e));
   return map;
@@ -61,13 +61,13 @@ export function except<T extends {}, Key extends [...(keyof T)[]]>(
   return newObject;
 }
 
-export function extractIds(object: RecordIdentifying): string[] {
+export function extractIds(object: RowIdentififying): string[] {
   if (object === undefined) {
     throw new Error(
       'Trying to insert/update record which was not saved before'
     );
   }
-  let test: Array<string | Record>;
+  let test: Array<string | Row>;
   if (!(object instanceof Array)) {
     test = [object];
   } else {
@@ -100,7 +100,7 @@ export function compact<T>(items: Array<T | undefined>): T[] {
   return items.filter((e) => e !== undefined) as T[];
 }
 
-export function formatResultToTableData<RowType extends Record>(
+export function formatResultToTableData<RowType extends Row>(
   results: RowType[]
 ): DataTable<RowType> {
   const ids: string[] = [];

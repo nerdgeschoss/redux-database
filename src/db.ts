@@ -1,7 +1,7 @@
 import {
-  Record,
+  Row,
   extractParentContext,
-  RecordIdentifying,
+  RowIdentififying,
   extractIds,
 } from './util';
 import { Table, DataTable, ContextChanges } from './table';
@@ -16,7 +16,7 @@ import {
 import { Query } from './query';
 
 export interface Data {
-  [key: string]: DataTable<Record>;
+  [key: string]: DataTable<Row>;
 }
 
 export interface StateDefining {
@@ -25,7 +25,7 @@ export interface StateDefining {
 }
 
 export interface ContextState {
-  _context?: { [context: string]: { [table: string]: ContextChanges<Record> } };
+  _context?: { [context: string]: { [table: string]: ContextChanges<Row> } };
 }
 
 export class DB<State extends StateDefining> {
@@ -116,7 +116,7 @@ export class DB<State extends StateDefining> {
 
   public commit<K extends Extract<keyof State['data'], string>>(
     table?: K,
-    ids?: RecordIdentifying
+    ids?: RowIdentififying
   ): CommitContextAction {
     const { currentContext } = this;
     if (!currentContext) {
@@ -134,7 +134,7 @@ export class DB<State extends StateDefining> {
 
   public revert<K extends Extract<keyof State['data'], string>>(
     table?: K,
-    ids?: RecordIdentifying
+    ids?: RowIdentififying
   ): RevertContextAction {
     const { currentContext } = this;
     if (!currentContext) {
@@ -153,7 +153,7 @@ export class DB<State extends StateDefining> {
   private changeSetsOfContext(
     table: string,
     context?: string
-  ): Array<ContextChanges<Record>> {
+  ): Array<ContextChanges<Row>> {
     const anyState = this.state as ContextState;
     if (!context) {
       return [];

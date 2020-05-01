@@ -7,11 +7,13 @@ interface Thing {
   age?: number;
   color?: string;
   ownerId: string;
+  revisedById?: string;
 }
 
 interface User {
   id: string;
   name: string;
+  favoriteThingIds?: string[];
 }
 
 interface State {
@@ -44,11 +46,23 @@ function dispatch(action: DBAction): void {
 function reset(): void {
   currentState = state;
   db = new DB(currentState);
-  dispatch(db.table('users').insert({ id: '10', name: 'John' }));
+  dispatch(
+    db.table('users').insert([
+      { id: '10', name: 'John', favoriteThingIds: ['1', '2'] },
+      { id: '20', name: 'Jack' },
+    ])
+  );
   dispatch(
     db.table('things').insert([
-      { id: '1', name: 'Hello World', age: 20, color: 'red', ownerId: '10' },
-      { id: '2', name: 'Last Entry', age: 5, ownerId: '10' },
+      {
+        id: '1',
+        name: 'Hello World',
+        age: 20,
+        color: 'red',
+        ownerId: '10',
+        revisedById: '20',
+      },
+      { id: '2', name: 'Last Entry', age: 5, ownerId: '20' },
     ])
   );
 }
@@ -104,7 +118,16 @@ describe('chainable queries', () => {
 
   describe('joining results', () => {
     it('embeds required objects by key', () => {
-      const thing = db.query('things').embed('owner', 'users', 'ownerId').first;
+      const thing = db.query('things').embed('owner', 'users', 'ownerId')
+        .first!;
+      expect(thing.owner.name).toEqual('John');
+    });
+
+    it('embeds optional objects by key', () => {
+      const thing = db.query('things').embed('revisor', 'users', 'revisedById')
+        .all;
+      expect(thing[0].revisor?.name).toEqual('Jack');
+      expect(thing[1].revisor).toBeUndefined();
     });
   });
 });

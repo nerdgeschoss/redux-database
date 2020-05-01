@@ -2,9 +2,9 @@ import { MutableTable } from './mutable_table';
 import type { DBDispatch, DBAction } from './actions';
 import { DB } from './db';
 import type { StateDefining } from './db';
-import type { RecordIdentifying } from './util';
+import type { RowIdentififying } from './util';
 import { reducer as defaultReducer } from './reducer';
-import type { Record } from './util';
+import type { Row } from './util';
 
 interface Store<State extends StateDefining> {
   subscribe: (callback: () => void) => void;
@@ -18,7 +18,7 @@ export class MutableDB<State extends StateDefining> {
   private reducer: (state: State, action: DBAction) => State;
   private store?: Store<State>;
   private subscribers: Array<() => void>;
-  private cachedTables: { [key: string]: MutableTable<Record> };
+  private cachedTables: { [key: string]: MutableTable<Row> };
   private get readDB(): DB<State> {
     return new DB(this.state, { context: this.currentContext });
   }
@@ -83,14 +83,14 @@ export class MutableDB<State extends StateDefining> {
 
   public commit<K extends Extract<keyof State['data'], string>>(
     table?: K,
-    ids?: RecordIdentifying
+    ids?: RowIdentififying
   ): void {
     this.dispatch(this.readDB.commit(table, ids));
   }
 
   public revert<K extends Extract<keyof State['data'], string>>(
     table?: K,
-    ids?: RecordIdentifying
+    ids?: RowIdentififying
   ): void {
     this.dispatch(this.readDB.revert(table, ids));
   }

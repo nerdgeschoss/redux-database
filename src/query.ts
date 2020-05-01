@@ -1,10 +1,9 @@
 import { DB } from './db';
 import { StateDefining } from './db';
-import { Table, DataTable } from './table';
+import { Table } from './table';
 import {
-  Record,
+  Row,
   formatResultToTableData,
-  orderBy,
   SortDescriptor,
   order,
   pick,
@@ -14,9 +13,8 @@ export class Query<
   State extends StateDefining,
   TableKey extends Extract<keyof State['data'], string>,
   OriginalRowType extends State['data'][TableKey]['byId']['someKey'],
-  T extends Record
+  T extends Row
 > {
-  // @ts-ignore
   private readonly db: DB<State>;
   private readonly table: Table<T>;
   constructor(db: DB<State>, table: Table<T>) {
@@ -38,7 +36,7 @@ export class Query<
 
   public select<K extends keyof T>(
     ...fields: K[]
-  ): Query<State, TableKey, OriginalRowType, Pick<T, K> & Record> {
+  ): Query<State, TableKey, OriginalRowType, Pick<T, K> & Row> {
     const results = this.all.map((object) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
@@ -65,7 +63,8 @@ export class Query<
   public embed<
     Key extends string,
     SecondaryTable extends Extract<keyof State['data'], string>,
-    JoinKey extends keyof T
+    JoinKey extends keyof T,
+    Embed = State['data'][SecondaryTable]['byId']['any']
   >(
     key: Key,
     table: SecondaryTable,
@@ -74,16 +73,22 @@ export class Query<
     State,
     TableKey,
     OriginalRowType,
-    T & { [Key]: State['data'][SecondaryTable]['byId']['any'] }
+    T & Record<Key, undefined extends T[JoinKey] ? Embed | undefined : Embed>
   > {
-    const results = this.all.map((e) => ({
-      ...e,
-      [key]: this.db.table(table).find((e[source] as unknown) as string),
-    }));
-    return this.queryFromResults(results);
+    const results = this.all.map((e) => {
+      const embed = e[source]
+        ? this.db.table(table).find((e[source] as unknown) as string)
+        : undefined;
+      return {
+        ...e,
+        [key]: embed,
+      };
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.queryFromResults(results as any);
   }
 
-  private queryFromResults<ResultType extends Record>(
+  private queryFromResults<ResultType extends Row>(
     results: ResultType[]
   ): Query<State, TableKey, OriginalRowType, ResultType> {
     const table = new Table<ResultType>(
