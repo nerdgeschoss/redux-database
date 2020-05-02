@@ -51,7 +51,7 @@ describe('mutable tables', () => {
     });
   });
 
-  fdescribe('subscribing', () => {
+  describe('subscribing', () => {
     it('subscribes to changes', () => {
       let timesInvoked = 0;
       db.subscribe(() => timesInvoked++);

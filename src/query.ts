@@ -1,4 +1,4 @@
-import { DB } from './db';
+import { DB, RowKeyOf, RowType } from './db';
 import { StateDefining } from './db';
 import { Table } from './table';
 import {
@@ -12,8 +12,7 @@ import {
 
 export class Query<
   State extends StateDefining,
-  TableKey extends Extract<keyof State['data'], string>,
-  OriginalRowType extends State['data'][TableKey]['byId']['someKey'],
+  TableKey extends RowKeyOf<State>,
   T extends Row
 > {
   private readonly db: DB<State>;
@@ -45,7 +44,7 @@ export class Query<
 
   public select<K extends keyof T>(
     ...fields: K[]
-  ): Query<State, TableKey, OriginalRowType, Pick<T, K> & Row> {
+  ): Query<State, TableKey, Pick<T, K> & Row> {
     const results = this.all.map((object) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
@@ -56,33 +55,31 @@ export class Query<
 
   public where(
     query: ((value: T) => boolean) | Partial<T>
-  ): Query<State, TableKey, OriginalRowType, T> {
+  ): Query<State, TableKey, T> {
     const results = this.table.where(query);
     return this.queryFromResults(results);
   }
 
-  public limit(amount: number): Query<State, TableKey, OriginalRowType, T> {
+  public limit(amount: number): Query<State, TableKey, T> {
     const results = this.all.slice(0, amount);
     return this.queryFromResults(results);
   }
 
-  public offset(amount: number): Query<State, TableKey, OriginalRowType, T> {
+  public offset(amount: number): Query<State, TableKey, T> {
     const results = this.all.slice(amount);
     return this.queryFromResults(results);
   }
 
-  public orderBy(
-    sortDescriptor: SortDescriptor<T>
-  ): Query<State, TableKey, OriginalRowType, T> {
+  public orderBy(sortDescriptor: SortDescriptor<T>): Query<State, TableKey, T> {
     const results = order(this.table.all, sortDescriptor);
     return this.queryFromResults(results);
   }
 
   public embed<
     Key extends string,
-    SecondaryTable extends Extract<keyof State['data'], string>,
+    SecondaryTable extends RowKeyOf<State>,
     JoinKey extends keyof T,
-    Embed = State['data'][SecondaryTable]['byId']['any']
+    Embed = RowType<State, SecondaryTable>
   >(
     key: Key,
     table: SecondaryTable,
@@ -90,7 +87,6 @@ export class Query<
   ): Query<
     State,
     TableKey,
-    OriginalRowType,
     T & Record<Key, undefined extends T[JoinKey] ? Embed | undefined : Embed>
   > {
     const results = this.all.map((e) => {
@@ -108,14 +104,14 @@ export class Query<
 
   public embedMulti<
     Key extends string,
-    SecondaryTable extends Extract<keyof State['data'], string>,
+    SecondaryTable extends RowKeyOf<State>,
     JoinKey extends keyof T,
-    Embed = State['data'][SecondaryTable]['byId']['any']
+    Embed = RowType<State, SecondaryTable>
   >(
     key: Key,
     table: SecondaryTable,
     source: JoinKey
-  ): Query<State, TableKey, OriginalRowType, T & Record<Key, Embed[]>> {
+  ): Query<State, TableKey, T & Record<Key, Embed[]>> {
     const results = this.all.map((e) => {
       const ids = (e[source] || []) as string[];
       const embed = compact(ids.map((id) => this.db.table(table).find(id)));
@@ -130,7 +126,7 @@ export class Query<
 
   private queryFromResults<ResultType extends Row>(
     results: ResultType[]
-  ): Query<State, TableKey, OriginalRowType, ResultType> {
+  ): Query<State, TableKey, ResultType> {
     const table = new Table<ResultType>(
       formatResultToTableData(results),
       this.table.name

@@ -1,6 +1,6 @@
 import { MutableTable } from './mutable_table';
 import type { DBDispatch, DBAction } from './actions';
-import { DB } from './db';
+import { DB, SettingsKey, SettingsType, RowKeyOf, RowType } from './db';
 import type { StateDefining } from './db';
 import { RowIdentififying, removeByValue } from './util';
 import { reducer as defaultReducer } from './reducer';
@@ -43,22 +43,20 @@ export class MutableDB<State extends StateDefining> {
     return new DB(this.state, { context: this.currentContext });
   }
 
-  public get<K extends Extract<keyof State['settings'], string>>(
-    name: K
-  ): State['settings'][K] {
+  public get<K extends SettingsKey<State>>(name: K): SettingsType<State, K> {
     return this.snapshot.get(name);
   }
 
-  public set<
-    K extends Extract<keyof State['settings'], string>,
-    U extends State['settings'][K]
-  >(name: K, value: U): void {
+  public set<K extends SettingsKey<State>, U extends SettingsType<State, K>>(
+    name: K,
+    value: U
+  ): void {
     this.dispatch(this.snapshot.set(name, value));
   }
 
-  public table<K extends Extract<keyof State['data'], string>>(
+  public table<K extends RowKeyOf<State>>(
     type: K
-  ): MutableTable<State['data'][K]['byId']['anyKey']> {
+  ): MutableTable<RowType<State, K>> {
     if (this.cachedTables[type]) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return this.cachedTables[type] as any;
@@ -73,14 +71,9 @@ export class MutableDB<State extends StateDefining> {
     return this.cachedTables[type] as any;
   }
 
-  public query<Key extends Extract<keyof State['data'], string>>(
+  public query<Key extends RowKeyOf<State>>(
     type: Key
-  ): Query<
-    State,
-    Key,
-    State['data'][Key]['byId']['someKey'],
-    State['data'][Key]['byId']['someKey']
-  > {
+  ): Query<State, Key, RowType<State, Key>> {
     const db = this.snapshot;
     return new Query(db, db.table(type));
   }
@@ -97,14 +90,14 @@ export class MutableDB<State extends StateDefining> {
     );
   }
 
-  public commit<K extends Extract<keyof State['data'], string>>(
+  public commit<K extends RowKeyOf<State>>(
     table?: K,
     ids?: RowIdentififying
   ): void {
     this.dispatch(this.snapshot.commit(table, ids));
   }
 
-  public revert<K extends Extract<keyof State['data'], string>>(
+  public revert<K extends RowKeyOf<State>>(
     table?: K,
     ids?: RowIdentififying
   ): void {
