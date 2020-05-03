@@ -1,6 +1,6 @@
 {
   "name": "redux-database",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "types": "dist/index",
@@ -16,6 +16,7 @@
     "build": "yarn build:js && yarn build:types",
     "build:js": "NODE_ENV=production rollup -c",
     "build:types": "tsc --emitDeclarationOnly",
+    "build:docs": "rm -rf docs && typedoc --out docs --mode library --theme minimal src/index.ts",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx}\"",
     "lint": "yarn lint:types && yarn lint:style && yarn lint:format",
     "lint:types": "tsc --noEmit",
@@ -42,6 +43,7 @@
     "rollup-plugin-cleaner": "^1.0.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
+    "typedoc": "^0.17.0-3",
     "typescript": "^3.8.3"
   }
 }
