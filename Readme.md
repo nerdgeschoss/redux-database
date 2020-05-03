@@ -1,18 +1,20 @@
 # Redux Database
 
+![Tests](https://github.com/nerdgeschoss/redux-database/workflows/Tests/badge.svg?branch=master)
+
 Simple reducer based in-memory database with strong typings and immutable documents, with plugins for redux and react.
 
 ## Why do I need this?
 
 Client side data normalization is hard. This library helps you to organize your state in a relational way, with queries
-and joins as you would expect from an SQL based database. There is a storage adaper for redux or you can use it as a 
+and joins as you would expect from an SQL based database. There is a storage adaper for redux or you can use it as a
 standalone library (redux-database has no dependencies!).
 
 If you wish to use this library with React, you can easily observe mutations on the state via subscriptions and hooks.
 
 ## Defining your state
 
-Define your models (only requirement is a required string `id` on them) and a corresponding database schema. The `settings` 
+Define your models (only requirement is a required string `id` on them) and a corresponding database schema. The `settings`
 key is for key-value-based data (e.g. UI settings, session tokens, etc) while the `data` key is for relational table data.
 
 ```ts
@@ -71,7 +73,7 @@ const things = db.table('things'); // if things is not defined, you would get an
 things.all; // returns Thing[]
 things.find('12'); // find by id
 things.where({ name: 'tool' }); // simple equality based where queries
-things.where(thing => thing.name.length == 4); // function based where queries
+things.where((thing) => thing.name.length == 4); // function based where queries
 ```
 
 ### Chainable Queries
@@ -79,14 +81,18 @@ things.where(thing => thing.name.length == 4); // function based where queries
 If you prefer to work with the chainable query syntax, you modify search results during a query:
 
 ```ts
-db.query('things').where({name: 'tool'}).select('name').order({name: 'desc'}).first // returns { id: '12', name: 'tool' }
+db
+  .query('things')
+  .where({ name: 'tool' })
+  .select('name')
+  .order({ name: 'desc' }).first; // returns { id: '12', name: 'tool' }
 ```
 
 Queries allow embedding records from other table. Assuming there is a `userId` on `things` pointing to a `users` table:
 
 ```ts
 // embed rows from `users`, selected by `userId` under the key `user`
-db.query('things').embed('user', 'users', 'userId').first // returns { id: '12', name: 'tool', user: { id: '1', name: 'User' } }
+db.query('things').embed('user', 'users', 'userId').first; // returns { id: '12', name: 'tool', user: { id: '1', name: 'User' } }
 ```
 
 If there is an array of ids (e.g. `userIds`), there's a corresponding `embedMulti` method to embed collections of rows.
@@ -113,7 +119,7 @@ Writing multiple records this way will update your UI multiple times - this can 
 
 ```ts
 store.dispatch(
-  db.transaction(dispatch => {
+  db.transaction((dispatch) => {
     dispatch(things.insert({ name: 'First Thing' }));
     dispatch(things.insert({ name: 'Second Thing' }));
   })
@@ -175,7 +181,7 @@ things.where({ name: 'First Thing' }); // => retrieves your record
 You can always get an immutable snapshot of the current state:
 
 ```ts
-db.snapshot // a DB instance of the current state
+db.snapshot; // a DB instance of the current state
 ```
 
 This database keeps the state internal and automatically uses the included reducer. If you have a Redux store (this is completely option), you can synchronize it with the `store` option:
@@ -195,11 +201,11 @@ This will automaticall keep the database instance in sync with your redux store 
 `MutableDB`s allow observing them for changes via subscriptions.
 
 ```ts
-const observation = db.observe(snapshot => snapshot.query(things).first);
-observation.current // always returns the current value
-observation.subscribe(value => console.log(value)) // Notifies if the result of the query has changed. This performs a deep equality check.
-observation.query = db => db.query(things).last // queries can be changed at runtime. This will also call all observers.
-observation.cancel() // to discard an observation once you're done
+const observation = db.observe((snapshot) => snapshot.query(things).first);
+observation.current; // always returns the current value
+observation.subscribe((value) => console.log(value)); // Notifies if the result of the query has changed. This performs a deep equality check.
+observation.query = (db) => db.query(things).last; // queries can be changed at runtime. This will also call all observers.
+observation.cancel(); // to discard an observation once you're done
 ```
 
 ## React Integration
@@ -211,15 +217,15 @@ A full integration package with debugging tools is under development, until then
 export function useForceUpdate(): () => void {
   const [, updateState] = useState(true);
   return () => {
-    updateState(state => !state);
+    updateState((state) => !state);
   };
 }
 
 // define a hook to use your database:
 export function useDatabase<T>(query: (db: DB<State>) => T): T {
   const forceUpdate = useForceUpdate();
-  const subscriptionRef = useRef<Subscription<State,T>>();
-  if(!subscriptionRef.current) {
+  const subscriptionRef = useRef<Subscription<State, T>>();
+  if (!subscriptionRef.current) {
     subscriptionRef.current = mutableDB.observe(query);
     subscriptionRef.current.subscribe(() => forceUpdate());
   }
