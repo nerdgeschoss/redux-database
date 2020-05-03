@@ -1,7 +1,7 @@
 import {
-  Record,
+  Row,
   extractParentContext,
-  RecordIdentifying,
+  RowIdentififying,
   extractIds,
 } from './util';
 import { Table, DataTable, ContextChanges } from './table';
@@ -13,9 +13,10 @@ import {
   DBAction,
   RevertContextAction,
 } from './actions';
+import { Query } from './query';
 
 export interface Data {
-  [key: string]: DataTable<Record>;
+  [key: string]: DataTable<Row>;
 }
 
 export interface StateDefining {
@@ -24,8 +25,28 @@ export interface StateDefining {
 }
 
 export interface ContextState {
-  _context?: { [context: string]: { [table: string]: ContextChanges<Record> } };
+  _context?: { [context: string]: { [table: string]: ContextChanges<Row> } };
 }
+
+export type RowKeyOf<T extends StateDefining> = Extract<
+  keyof T['data'],
+  string
+>;
+
+export type RowType<
+  State extends StateDefining,
+  Key extends RowKeyOf<State>
+> = State['data'][Key]['byId']['someKey'];
+
+export type SettingsKey<T extends StateDefining> = Extract<
+  keyof T['settings'],
+  string
+>;
+
+export type SettingsType<
+  State extends StateDefining,
+  Key extends SettingsKey<State>
+> = State['settings'][Key];
 
 export class DB<State extends StateDefining> {
   private state: State;
@@ -36,9 +57,7 @@ export class DB<State extends StateDefining> {
     this.currentContext = options.context;
   }
 
-  public get<K extends Extract<keyof State['settings'], string>>(
-    name: K
-  ): State['settings'][K] {
+  public get<K extends SettingsKey<State>>(name: K): SettingsType<State, K> {
     const anyState = this.state as ContextState;
     if (
       this.currentContext &&
@@ -53,10 +72,10 @@ export class DB<State extends StateDefining> {
     return this.state.settings[name] as any;
   }
 
-  public set<
-    K extends Extract<keyof State['settings'], string>,
-    U extends State['settings'][K]
-  >(name: K, value: U): SettingsUpdateAction {
+  public set<K extends SettingsKey<State>, U extends SettingsType<State, K>>(
+    name: K,
+    value: U
+  ): SettingsUpdateAction {
     return {
       type: 'SETTINGS_UPDATE',
       payload: {
@@ -67,9 +86,7 @@ export class DB<State extends StateDefining> {
     };
   }
 
-  public table<K extends Extract<keyof State['data'], string>>(
-    type: K
-  ): Table<State['data'][K]['byId']['someKey']> {
+  public table<K extends RowKeyOf<State>>(type: K): Table<RowType<State, K>> {
     const contextChanges = this.currentContext
       ? this.changeSetsOfContext(type, this.currentContext)
       : undefined;
@@ -79,6 +96,12 @@ export class DB<State extends StateDefining> {
       contextChanges,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
+  }
+
+  public query<Key extends RowKeyOf<State>>(
+    type: Key
+  ): Query<State, Key, RowType<State, Key>> {
+    return new Query(this, this.table(type));
   }
 
   public context(context: string): DB<State> {
@@ -102,9 +125,9 @@ export class DB<State extends StateDefining> {
     };
   }
 
-  public commit<K extends Extract<keyof State['data'], string>>(
+  public commit<K extends RowKeyOf<State>>(
     table?: K,
-    ids?: RecordIdentifying
+    ids?: RowIdentififying
   ): CommitContextAction {
     const { currentContext } = this;
     if (!currentContext) {
@@ -120,9 +143,9 @@ export class DB<State extends StateDefining> {
     };
   }
 
-  public revert<K extends Extract<keyof State['data'], string>>(
+  public revert<K extends RowKeyOf<State>>(
     table?: K,
-    ids?: RecordIdentifying
+    ids?: RowIdentififying
   ): RevertContextAction {
     const { currentContext } = this;
     if (!currentContext) {
@@ -141,7 +164,7 @@ export class DB<State extends StateDefining> {
   private changeSetsOfContext(
     table: string,
     context?: string
-  ): Array<ContextChanges<Record>> {
+  ): Array<ContextChanges<Row>> {
     const anyState = this.state as ContextState;
     if (!context) {
       return [];

@@ -1,4 +1,4 @@
-import { Record } from './util';
+import { Row } from './util';
 
 export interface UpdateAction {
   type: 'UPDATE_RECORD';
@@ -6,7 +6,7 @@ export interface UpdateAction {
     ids: string[];
     key: string;
     context?: string;
-    data: Partial<Record>;
+    data: Partial<Row>;
   };
 }
 
@@ -16,7 +16,7 @@ export interface InsertAction {
     ids: string[];
     key: string;
     context?: string;
-    data: Record[];
+    data: Row[];
   };
 }
 
@@ -26,7 +26,7 @@ export interface UpsertAction {
     ids: string[];
     key: string;
     context?: string;
-    data: Record[];
+    data: Row[];
   };
 }
 

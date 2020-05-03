@@ -1,7 +1,7 @@
 import { StateDefining, ContextState } from './db';
 import { DBAction } from './actions';
 import { ContextChanges, DataTable } from './table';
-import { byId, Record, except, extractParentContext } from './util';
+import { byId, Row, except, extractParentContext } from './util';
 
 function applyInContext<State, T>(
   state: State,
@@ -131,7 +131,7 @@ export function reduce<State extends StateDefining>(
           action.payload.context,
           key,
           (changes) => {
-            const updates: { [id: string]: Partial<Record> } = {};
+            const updates: { [id: string]: Partial<Row> } = {};
             action.payload.ids.forEach(
               (e) =>
                 (updates[e] = { ...changes.byId[e], ...action.payload.data })
@@ -144,7 +144,7 @@ export function reduce<State extends StateDefining>(
         );
       } else {
         const updatedId = action.payload.data['id'];
-        const updates: { [id: string]: Record } = {};
+        const updates: { [id: string]: Row } = {};
         action.payload.ids.forEach(
           (e) =>
             (updates[updatedId || e] = {
@@ -152,7 +152,7 @@ export function reduce<State extends StateDefining>(
               ...action.payload.data,
             })
         );
-        const dataSet: DataTable<Record> = {
+        const dataSet: DataTable<Row> = {
           ...state.data[key],
           byId: { ...state.data[key].byId, ...updates },
         };
@@ -205,12 +205,12 @@ export function reduce<State extends StateDefining>(
         payload: { context, table: tableToMerge, ids: idsToMerge },
       }) as ContextState;
       const parentContext = extractParentContext(context);
-      const changes: { [table: string]: ContextChanges<Record> } =
+      const changes: { [table: string]: ContextChanges<Row> } =
         (contextState._context && contextState._context[context]) || {};
 
       if (parentContext) {
         const parentContextChanges: {
-          [table: string]: ContextChanges<Record>;
+          [table: string]: ContextChanges<Row>;
         } = { ...contextState._context![parentContext] };
         Object.keys(changes).forEach((table) => {
           if (tableToMerge && tableToMerge !== table) {
@@ -265,7 +265,7 @@ export function reduce<State extends StateDefining>(
             return;
           }
           const change = changes[table];
-          const data = state.data[table] as DataTable<Record>;
+          const data = state.data[table] as DataTable<Row>;
           state.data[table] = {
             ids: data.ids
               .concat(
@@ -292,18 +292,16 @@ export function reduce<State extends StateDefining>(
     case 'REVERT_CONTEXT': {
       const contextState = state as ContextState;
       const context = action.payload.context;
-      const changes: { [table: string]: ContextChanges<Record> } =
+      const changes: { [table: string]: ContextChanges<Row> } =
         (contextState._context && contextState._context[context]) || {};
       const tableToRevert = action.payload.table;
       const idsToRevert = action.payload.ids;
-      let contextUpdates:
-        | { [table: string]: ContextChanges<Record> }
-        | undefined;
+      let contextUpdates: { [table: string]: ContextChanges<Row> } | undefined;
       if (tableToRevert) {
         contextUpdates = { ...changes };
         if (idsToRevert) {
           const contextTableChange = contextUpdates[tableToRevert];
-          const tableChanges: { [id: string]: Partial<Record> } = {};
+          const tableChanges: { [id: string]: Partial<Row> } = {};
           Object.keys(contextTableChange.byId).forEach((id) => {
             if (idsToRevert.includes(id)) {
               return;

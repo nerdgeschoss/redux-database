@@ -1,8 +1,8 @@
-import { Record, RecordIdentifying, RecordInsertionList } from './util';
+import { Row, RowIdentififying, RowInsertionList } from './util';
 import { Table, ObjectChanges } from './table';
 import { DBDispatch } from './actions';
 
-export class MutableTable<T extends Record> {
+export class MutableTable<T extends Row> {
   public underlyingTable: Table<T>;
   private dispatch: DBDispatch;
 
@@ -43,27 +43,27 @@ export class MutableTable<T extends Record> {
     return this.underlyingTable.where(query);
   }
 
-  public insert(records: RecordInsertionList<T>): void {
+  public insert(records: RowInsertionList<T>): void {
     this.dispatch(this.underlyingTable.insert(records));
   }
 
-  public upsert(records: RecordInsertionList<T>): void {
+  public upsert(records: RowInsertionList<T>): void {
     this.dispatch(this.underlyingTable.upsert(records));
   }
 
-  public update(id: RecordIdentifying, values: Partial<T>): void {
+  public update(id: RowIdentififying, values: Partial<T>): void {
     this.dispatch(this.underlyingTable.update(id, values));
   }
 
-  public delete(id: RecordIdentifying): void {
+  public delete(id: RowIdentififying): void {
     this.dispatch(this.underlyingTable.delete(id));
   }
 
-  public commit(ids?: RecordIdentifying): void {
+  public commit(ids?: RowIdentififying): void {
     this.dispatch(this.underlyingTable.commit(ids));
   }
 
-  public revert(ids?: RecordIdentifying): void {
+  public revert(ids?: RowIdentififying): void {
     this.dispatch(this.underlyingTable.revert(ids));
   }
 }

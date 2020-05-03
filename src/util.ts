@@ -1,14 +1,16 @@
+import { DataTable } from './table';
+
 export type OptionalID = { id?: string };
-export type InsertRecord<T extends Record> = { id?: string } & Omit<T, 'id'>;
-export type RecordInsertionList<T extends Record> =
+export type InsertRecord<T extends Row> = { id?: string } & Omit<T, 'id'>;
+export type RowInsertionList<T extends Row> =
   | InsertRecord<T>
   | Array<InsertRecord<T>>;
 
-export interface Record {
+export interface Row {
   id: string;
 }
 
-export type RecordIdentifying = string | string[] | Record | Record[];
+export type RowIdentififying = string | string[] | Row | Row[];
 
 export const emptyTable = Object.freeze({
   byId: {},
@@ -24,10 +26,22 @@ export function guid(): string {
   return [s4() + s4(), s4(), s4(), s4(), s4() + s4() + s4()].join('-');
 }
 
-export function byId(records: Record[]): { [id: string]: Record } {
+export function byId(records: Row[]): { [id: string]: Row } {
   const map = {};
   records.forEach((e) => (map[e.id] = e));
   return map;
+}
+
+export function pick<T extends {}, K extends keyof T>(
+  obj: T,
+  ...keys: K[]
+): Pick<T, K> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ret: any = {};
+  keys.forEach((key) => {
+    ret[key] = obj[key];
+  });
+  return ret;
 }
 
 export function except<T extends {}, Key extends [...(keyof T)[]]>(
@@ -47,13 +61,13 @@ export function except<T extends {}, Key extends [...(keyof T)[]]>(
   return newObject;
 }
 
-export function extractIds(object: RecordIdentifying): string[] {
+export function extractIds(object: RowIdentififying): string[] {
   if (object === undefined) {
     throw new Error(
       'Trying to insert/update record which was not saved before'
     );
   }
-  let test: Array<string | Record>;
+  let test: Array<string | Row>;
   if (!(object instanceof Array)) {
     test = [object];
   } else {
@@ -84,4 +98,78 @@ export function flatten<T>(items: T[][]): T[] {
 
 export function compact<T>(items: Array<T | undefined>): T[] {
   return items.filter((e) => e !== undefined) as T[];
+}
+
+export function removeByValue<T>(array: Array<T>, element: T): void {
+  const index = array.indexOf(element);
+  if (index !== -1) {
+    array.splice(index, 1);
+  }
+}
+
+export function formatResultToTableData<RowType extends Row>(
+  results: RowType[]
+): DataTable<RowType> {
+  const ids: string[] = [];
+  const byId = {};
+  for (const result of results) {
+    ids.push(result.id);
+    byId[result.id] = result;
+  }
+  return {
+    ids,
+    byId,
+  };
+}
+
+export function orderBy<T extends {}, Key extends keyof T>(
+  elements: T[],
+  key: Key,
+  order: 'asc' | 'desc' = 'asc'
+): T[] {
+  return elements.concat().sort((a, b) => {
+    if (!a.hasOwnProperty(key) || !b.hasOwnProperty(key)) {
+      return 0;
+    }
+    const varA = a[key];
+    const varB = b[key];
+
+    let comparison = 0;
+    if (varA > varB) {
+      comparison = 1;
+    } else if (varA < varB) {
+      comparison = -1;
+    }
+    return order === 'desc' ? comparison * -1 : comparison;
+  });
+}
+
+type SimpleSortDescriptor<T> = keyof T;
+
+type DetailedSortDescriptor<T> = {
+  [P in keyof T]?: 'asc' | 'desc';
+};
+
+export type SortDescriptor<T> =
+  | SimpleSortDescriptor<T>
+  | DetailedSortDescriptor<T>;
+
+export function order<T extends {}>(
+  elements: T[],
+  sortDescriptor: SortDescriptor<T>
+): T[] {
+  if (typeof sortDescriptor === 'string') {
+    elements = orderBy(elements, sortDescriptor);
+  } else {
+    Object.keys(sortDescriptor).forEach((key) => {
+      elements = orderBy(elements, key as keyof T, sortDescriptor[key]);
+    });
+  }
+  return elements;
+}
+
+export function deepEqual<T>(a: T, b: T): boolean {
+  // even though it seems counterintuitive, stringify is extremely fast and even faster than most js
+  // implementations of deep equal.
+  return JSON.stringify(a) === JSON.stringify(b);
 }

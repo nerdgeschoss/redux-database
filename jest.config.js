@@ -1,5 +1,4 @@
 const config = {
-  preset: 'ts-jest',
   collectCoverage: true,
 };
 
