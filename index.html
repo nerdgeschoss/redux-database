@@ -2403,6 +2403,7 @@ img {
 			<a href="#redux-database" id="redux-database" style="color: inherit; text-decoration: none;">
 				<h1>Redux Database</h1>
 			</a>
+			<p><img src="https://github.com/nerdgeschoss/redux-database/workflows/Tests/badge.svg?branch=master" alt="Tests"></p>
 			<p>Simple reducer based in-memory database with strong typings and immutable documents, with plugins for redux and react.</p>
 			<a href="#why-do-i-need-this" id="why-do-i-need-this" style="color: inherit; text-decoration: none;">
 				<h2>Why do I need this?</h2>
@@ -2458,15 +2459,19 @@ img {
 things.all; <span class="hljs-comment">// returns Thing[]</span>
 things.find(<span class="hljs-string">'12'</span>); <span class="hljs-comment">// find by id</span>
 things.where({ name: <span class="hljs-string">'tool'</span> }); <span class="hljs-comment">// simple equality based where queries</span>
-things.where(<span class="hljs-function"><span class="hljs-params">thing</span> =&gt;</span> thing.name.length == <span class="hljs-number">4</span>); <span class="hljs-comment">// function based where queries</span></code></pre>
+things.where(<span class="hljs-function">(<span class="hljs-params">thing</span>) =&gt;</span> thing.name.length == <span class="hljs-number">4</span>); <span class="hljs-comment">// function based where queries</span></code></pre>
 			<a href="#chainable-queries" id="chainable-queries" style="color: inherit; text-decoration: none;">
 				<h3>Chainable Queries</h3>
 			</a>
 			<p>If you prefer to work with the chainable query syntax, you modify search results during a query:</p>
-			<pre><code class="language-ts">db.query(<span class="hljs-string">'things'</span>).where({name: <span class="hljs-string">'tool'</span>}).select(<span class="hljs-string">'name'</span>).order({name: <span class="hljs-string">'desc'</span>}).first <span class="hljs-comment">// returns { id: '12', name: 'tool' }</span></code></pre>
+			<pre><code class="language-ts">db
+  .query(<span class="hljs-string">'things'</span>)
+  .where({ name: <span class="hljs-string">'tool'</span> })
+  .select(<span class="hljs-string">'name'</span>)
+  .order({ name: <span class="hljs-string">'desc'</span> }).first; <span class="hljs-comment">// returns { id: '12', name: 'tool' }</span></code></pre>
 			<p>Queries allow embedding records from other table. Assuming there is a <code>userId</code> on <code>things</code> pointing to a <code>users</code> table:</p>
 			<pre><code class="language-ts"><span class="hljs-comment">// embed rows from `users`, selected by `userId` under the key `user`</span>
-db.query(<span class="hljs-string">'things'</span>).embed(<span class="hljs-string">'user'</span>, <span class="hljs-string">'users'</span>, <span class="hljs-string">'userId'</span>).first <span class="hljs-comment">// returns { id: '12', name: 'tool', user: { id: '1', name: 'User' } }</span></code></pre>
+db.query(<span class="hljs-string">'things'</span>).embed(<span class="hljs-string">'user'</span>, <span class="hljs-string">'users'</span>, <span class="hljs-string">'userId'</span>).first; <span class="hljs-comment">// returns { id: '12', name: 'tool', user: { id: '1', name: 'User' } }</span></code></pre>
 			<p>If there is an array of ids (e.g. <code>userIds</code>), there&#39;s a corresponding <code>embedMulti</code> method to embed collections of rows.</p>
 			<a href="#writing-data" id="writing-data" style="color: inherit; text-decoration: none;">
 				<h2>Writing Data</h2>
@@ -2484,7 +2489,7 @@ store.dispatch(things.update(<span class="hljs-string">'1'</span>, { name: <span
 store.dispatch(things.delete(<span class="hljs-string">'1'</span>));</code></pre>
 			<p>Writing multiple records this way will update your UI multiple times - this can lead to performance problems, especially when updating and inserting huge amounts of data. For this you can use a transaction:</p>
 			<pre><code class="language-ts">store.dispatch(
-  db.transaction(<span class="hljs-function"><span class="hljs-params">dispatch</span> =&gt;</span> {
+  db.transaction(<span class="hljs-function">(<span class="hljs-params">dispatch</span>) =&gt;</span> {
     dispatch(things.insert({ name: <span class="hljs-string">'First Thing'</span> }));
     dispatch(things.insert({ name: <span class="hljs-string">'Second Thing'</span> }));
   })
@@ -2523,7 +2528,7 @@ db.get(<span class="hljs-string">'enableAwesomeThing'</span>); <span class="hljs
 things.insert({ name: <span class="hljs-string">'First Thing'</span> });
 things.where({ name: <span class="hljs-string">'First Thing'</span> }); <span class="hljs-comment">// =&gt; retrieves your record</span></code></pre>
 			<p>You can always get an immutable snapshot of the current state:</p>
-			<pre><code class="language-ts">db.snapshot <span class="hljs-comment">// a DB instance of the current state</span></code></pre>
+			<pre><code class="language-ts">db.snapshot; <span class="hljs-comment">// a DB instance of the current state</span></code></pre>
 			<p>This database keeps the state internal and automatically uses the included reducer. If you have a Redux store (this is completely option), you can synchronize it with the <code>store</code> option:</p>
 			<pre><code class="language-ts"><span class="hljs-keyword">import</span> { store } <span class="hljs-keyword">from</span> <span class="hljs-string">'redux'</span>;
 <span class="hljs-keyword">import</span> { MutableDB, reducer } <span class="hljs-keyword">from</span> <span class="hljs-string">'redux-database'</span>;
@@ -2535,11 +2540,11 @@ things.where({ name: <span class="hljs-string">'First Thing'</span> }); <span cl
 				<h3>Observing Changes</h3>
 			</a>
 			<p><code>MutableDB</code>s allow observing them for changes via subscriptions.</p>
-			<pre><code class="language-ts"><span class="hljs-keyword">const</span> observation = db.observe(<span class="hljs-function"><span class="hljs-params">snapshot</span> =&gt;</span> snapshot.query(things).first);
-observation.current <span class="hljs-comment">// always returns the current value</span>
-observation.subscribe(<span class="hljs-function"><span class="hljs-params">value</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(value)) <span class="hljs-comment">// Notifies if the result of the query has changed. This performs a deep equality check.</span>
-observation.query = <span class="hljs-function"><span class="hljs-params">db</span> =&gt;</span> db.query(things).last <span class="hljs-comment">// queries can be changed at runtime. This will also call all observers.</span>
-observation.cancel() <span class="hljs-comment">// to discard an observation once you're done</span></code></pre>
+			<pre><code class="language-ts"><span class="hljs-keyword">const</span> observation = db.observe(<span class="hljs-function">(<span class="hljs-params">snapshot</span>) =&gt;</span> snapshot.query(things).first);
+observation.current; <span class="hljs-comment">// always returns the current value</span>
+observation.subscribe(<span class="hljs-function">(<span class="hljs-params">value</span>) =&gt;</span> <span class="hljs-built_in">console</span>.log(value)); <span class="hljs-comment">// Notifies if the result of the query has changed. This performs a deep equality check.</span>
+observation.query = <span class="hljs-function">(<span class="hljs-params">db</span>) =&gt;</span> db.query(things).last; <span class="hljs-comment">// queries can be changed at runtime. This will also call all observers.</span>
+observation.cancel(); <span class="hljs-comment">// to discard an observation once you're done</span></code></pre>
 			<a href="#react-integration" id="react-integration" style="color: inherit; text-decoration: none;">
 				<h2>React Integration</h2>
 			</a>
@@ -2548,15 +2553,15 @@ observation.cancel() <span class="hljs-comment">// to discard an observation onc
 <span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">useForceUpdate</span>(<span class="hljs-params"></span>): (<span class="hljs-params"></span>) =&gt; <span class="hljs-title">void</span> </span>{
   <span class="hljs-keyword">const</span> [, updateState] = useState(<span class="hljs-literal">true</span>);
   <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
-    updateState(<span class="hljs-function"><span class="hljs-params">state</span> =&gt;</span> !state);
+    updateState(<span class="hljs-function">(<span class="hljs-params">state</span>) =&gt;</span> !state);
   };
 }
 
 <span class="hljs-comment">// define a hook to use your database:</span>
 <span class="hljs-keyword">export</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">useDatabase</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-params">query: (db: DB&lt;State&gt;) =&gt; T</span>): <span class="hljs-title">T</span> </span>{
   <span class="hljs-keyword">const</span> forceUpdate = useForceUpdate();
-  <span class="hljs-keyword">const</span> subscriptionRef = useRef&lt;Subscription&lt;State,T&gt;&gt;();
-  <span class="hljs-keyword">if</span>(!subscriptionRef.current) {
+  <span class="hljs-keyword">const</span> subscriptionRef = useRef&lt;Subscription&lt;State, T&gt;&gt;();
+  <span class="hljs-keyword">if</span> (!subscriptionRef.current) {
     subscriptionRef.current = mutableDB.observe(query);
     subscriptionRef.current.subscribe(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> forceUpdate());
   }
@@ -2623,7 +2628,7 @@ observation.cancel() <span class="hljs-comment">// to discard an observation onc
 				<div class="tsd-signature tsd-kind-icon">DBAction<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">UpdateAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">DeleteAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">InsertAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">UpsertAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">SettingsUpdateAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">TransactionAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">RevertContextAction</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">CommitContextAction</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/c6cc7ed/src/actions.ts#L76">actions.ts:76</a></li>
+						<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/a36f495/src/actions.ts#L76">actions.ts:76</a></li>
 					</ul>
 				</aside>
 			</section>
@@ -2636,7 +2641,7 @@ observation.cancel() <span class="hljs-comment">// to discard an observation onc
 				<div class="tsd-signature tsd-kind-icon">empty<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{}</span><span class="tsd-signature-symbol"> = Object.freeze({byId: {},ids: [],})</span></div>
 				<aside class="tsd-sources">
 					<ul>
-						<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/c6cc7ed/src/util.ts#L15">util.ts:15</a></li>
+						<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/a36f495/src/util.ts#L15">util.ts:15</a></li>
 					</ul>
 				</aside>
 				<div class="tsd-type-declaration">
@@ -2658,7 +2663,7 @@ observation.cancel() <span class="hljs-comment">// to discard an observation onc
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/c6cc7ed/src/util.ts#L20">util.ts:20</a></li>
+								<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/a36f495/src/util.ts#L20">util.ts:20</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
@@ -2675,7 +2680,7 @@ observation.cancel() <span class="hljs-comment">// to discard an observation onc
 					<li class="tsd-description">
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/c6cc7ed/src/reducer.ts#L340">reducer.ts:340</a></li>
+								<li>Defined in <a href="https://github.com/nerdgeschoss/redux-database/blob/a36f495/src/reducer.ts#L340">reducer.ts:340</a></li>
 							</ul>
 						</aside>
 						<h4 class="tsd-type-parameters-title">Type parameters</h4>
