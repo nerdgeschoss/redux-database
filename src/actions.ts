@@ -39,6 +39,34 @@ export interface DeleteAction {
   };
 }
 
+export interface TruncateAction {
+  type: 'TRUNCATE';
+  payload:
+    | {
+        type: 'table';
+        key: string;
+      }
+    | {
+        type: 'database';
+      };
+}
+
+export interface ResetAction {
+  type: 'RESET';
+  payload:
+    | {
+        type: 'table';
+        key: string;
+      }
+    | {
+        type: 'tables';
+      }
+    | {
+        type: 'settings';
+      }
+    | { type: 'all' };
+}
+
 export interface SettingsUpdateAction {
   type: 'SETTINGS_UPDATE';
   payload: {
@@ -81,6 +109,8 @@ export type DBAction =
   | SettingsUpdateAction
   | TransactionAction
   | RevertContextAction
-  | CommitContextAction;
+  | CommitContextAction
+  | TruncateAction
+  | ResetAction;
 
 export type DBDispatch = (action: DBAction) => void;

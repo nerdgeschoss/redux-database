@@ -1,7 +1,7 @@
 import { StateDefining, ContextState } from './db';
 import { DBAction } from './actions';
 import { ContextChanges, DataTable } from './table';
-import { byId, Row, except, extractParentContext } from './util';
+import { byId, Row, except, extractParentContext, emptyTable } from './util';
 
 function applyInContext<State, T>(
   state: State,
@@ -28,8 +28,10 @@ function applyInContext<State, T>(
 
 export function reduce<State extends StateDefining>(
   state: State,
-  action: DBAction
+  action: DBAction,
+  options: { initialState: State }
 ): State {
+  const { initialState } = options;
   switch (action.type) {
     case 'INSERT_RECORD': {
       const key = action.payload.key;
@@ -72,25 +74,33 @@ export function reduce<State extends StateDefining>(
       const existingRecords = action.payload.data.filter((e) =>
         currentIds.has(e.id)
       );
-      state = reduce(state, {
-        type: 'INSERT_RECORD',
-        payload: {
-          ids: newRecords.map((e) => e.id),
-          key,
-          context,
-          data: newRecords,
-        },
-      });
-      for (const record of existingRecords) {
-        state = reduce(state, {
-          type: 'UPDATE_RECORD',
+      state = reduce(
+        state,
+        {
+          type: 'INSERT_RECORD',
           payload: {
-            ids: [record.id],
+            ids: newRecords.map((e) => e.id),
             key,
             context,
-            data: record,
+            data: newRecords,
           },
-        });
+        },
+        options
+      );
+      for (const record of existingRecords) {
+        state = reduce(
+          state,
+          {
+            type: 'UPDATE_RECORD',
+            payload: {
+              ids: [record.id],
+              key,
+              context,
+              data: record,
+            },
+          },
+          options
+        );
       }
       break;
     }
@@ -174,6 +184,49 @@ export function reduce<State extends StateDefining>(
       }
       break;
     }
+    case 'TRUNCATE': {
+      switch (action.payload.type) {
+        case 'table':
+          state = {
+            ...state,
+            data: { ...state.data, [action.payload.key]: { ...emptyTable } },
+          };
+          break;
+        case 'database': {
+          const tables = Object.keys(state.data);
+          state = { ...state, data: {} };
+          for (const table of tables) {
+            state.data[table] = { ...emptyTable };
+          }
+        }
+      }
+      break;
+    }
+    case 'RESET': {
+      switch (action.payload.type) {
+        case 'all':
+          state = initialState;
+          break;
+        case 'table':
+          state = {
+            ...state,
+            data: {
+              ...state.data,
+              [action.payload.key]: {
+                ...initialState.data[action.payload.key],
+              },
+            },
+          };
+          break;
+        case 'tables':
+          state = { ...state, data: initialState.data };
+          break;
+        case 'settings':
+          state = { ...state, settings: initialState.settings };
+          break;
+      }
+      break;
+    }
     case 'SETTINGS_UPDATE': {
       const key = action.payload.key;
       if (action.payload.context) {
@@ -200,10 +253,14 @@ export function reduce<State extends StateDefining>(
       const tableToMerge = action.payload.table;
       const idsToMerge = action.payload.ids;
       const contextState = state as ContextState;
-      const revertedState = reduce(state, {
-        type: 'REVERT_CONTEXT',
-        payload: { context, table: tableToMerge, ids: idsToMerge },
-      }) as ContextState;
+      const revertedState = reduce(
+        state,
+        {
+          type: 'REVERT_CONTEXT',
+          payload: { context, table: tableToMerge, ids: idsToMerge },
+        },
+        options
+      ) as ContextState;
       const parentContext = extractParentContext(context);
       const changes: { [table: string]: ContextChanges<Row> } =
         (contextState._context && contextState._context[context]) || {};
@@ -329,7 +386,7 @@ export function reduce<State extends StateDefining>(
     }
     case 'TRANSACTION': {
       action.payload.actions.forEach((a) => {
-        state = reduce(state, a);
+        state = reduce(state, a, options);
       });
       break;
     }
@@ -344,6 +401,6 @@ export function reducer<State extends StateDefining>(
     if (!state) {
       state = initialState;
     }
-    return reduce(state, action);
+    return reduce(state, action, { initialState });
   };
 }
