@@ -15,6 +15,8 @@ import {
   CommitContextAction,
   RevertContextAction,
   UpsertAction,
+  TruncateAction,
+  ResetAction,
 } from './actions';
 
 export interface DataTable<T> {
@@ -81,6 +83,10 @@ export class Table<T extends Row> {
     return this.find(this.ids[this.ids.length - 1]);
   }
 
+  public get length(): number {
+    return this.ids.length;
+  }
+
   public where(query: ((value: T) => boolean) | Partial<T>): T[] {
     if (typeof query === 'function') {
       return this.all.filter(query);
@@ -145,6 +151,26 @@ export class Table<T extends Row> {
         key: this.key,
         context: this.context,
         ids: extractIds(id),
+      },
+    };
+  }
+
+  public truncate(): TruncateAction {
+    return {
+      type: 'TRUNCATE',
+      payload: {
+        type: 'table',
+        key: this.key,
+      },
+    };
+  }
+
+  public reset(): ResetAction {
+    return {
+      type: 'RESET',
+      payload: {
+        type: 'table',
+        key: this.key,
       },
     };
   }

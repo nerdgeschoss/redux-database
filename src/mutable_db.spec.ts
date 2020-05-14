@@ -39,6 +39,33 @@ describe('mutable tables', () => {
     });
   });
 
+  describe('truncating and resetting', () => {
+    it('truncates a table', () => {
+      const things = db.table('things');
+      things.insert({ name: 'Test' });
+      expect(things.length).toEqual(1);
+      things.truncate();
+      expect(things.length).toEqual(0);
+    });
+
+    it('truncates the whole database', () => {
+      const things = db.table('things');
+      things.insert({ name: 'Test' });
+      expect(things.length).toEqual(1);
+      db.truncate();
+      expect(things.length).toEqual(0);
+    });
+
+    it('resets the whole database', () => {
+      const things = db.table('things');
+      things.insert({ name: 'Test' });
+      db.set('isChecked', false);
+      db.reset();
+      expect(things.length).toEqual(0);
+      expect(db.get('isChecked')).toBeTruthy();
+    });
+  });
+
   describe('mutable settings', () => {
     beforeEach(reset);
     it('reads a setting', () => {

@@ -12,6 +12,8 @@ import {
   DBDispatch,
   DBAction,
   RevertContextAction,
+  TruncateAction,
+  ResetAction,
 } from './actions';
 import { Query } from './query';
 
@@ -268,6 +270,40 @@ export class DB<State extends StateDefining> {
         context: currentContext,
         table,
         ids: ids ? extractIds(ids) : undefined,
+      },
+    };
+  }
+
+  /**
+   * Truncates all tables. After this action, all tables are empty. This will not change settings.
+   * If you would like to reset settings instead, use [[reset]].
+   *
+   * @category Reset
+   */
+  public truncate(): TruncateAction {
+    return {
+      type: 'TRUNCATE',
+      payload: {
+        type: 'database',
+      },
+    };
+  }
+
+  /**
+   * Resets the given type back to the initial state. If you want to have empty tables, use
+   * [[truncate]] instead.
+   *
+   * - `all`: Reset settings and tables back to initial state.
+   * - `tables`: Reset tables, but keeps current settings.
+   * - `settings`: Reset settings, but keeps all tables.
+   *
+   * @category Reset
+   */
+  public reset(type: 'all' | 'tables' | 'settings' = 'all'): ResetAction {
+    return {
+      type: 'RESET',
+      payload: {
+        type: type,
       },
     };
   }

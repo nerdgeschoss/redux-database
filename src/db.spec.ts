@@ -96,6 +96,55 @@ describe('a table', () => {
     expect(db.table('things').first!.id).toBe('1');
   });
 
+  it('counts elements', () => {
+    dispatch(db.table('things').insert({ name: 'Test' }));
+    expect(db.table('things').length).toEqual(1);
+  });
+
+  it('truncates a table', () => {
+    dispatch(db.table('things').insert({ name: 'Test' }));
+    dispatch(db.table('things').truncate());
+    expect(db.table('things').length).toEqual(0);
+  });
+
+  it('truncates all tables', () => {
+    dispatch(db.table('things').insert({ name: 'Test' }));
+    dispatch(db.truncate());
+    expect(db.table('things').length).toEqual(0);
+  });
+
+  describe('resetting to initial state', () => {
+    it('resets a table', () => {
+      dispatch(db.table('things').insert({ name: 'Test' }));
+      dispatch(db.table('things').reset());
+      expect(db.table('things').length).toEqual(0);
+    });
+
+    it('resets all tables', () => {
+      dispatch(db.table('things').insert({ name: 'Test' }));
+      dispatch(db.set('isChecked', false));
+      dispatch(db.reset('tables'));
+      expect(db.table('things').length).toEqual(0);
+      expect(db.get('isChecked')).toBeFalsy();
+    });
+
+    it('resets settings', () => {
+      dispatch(db.table('things').insert({ name: 'Test' }));
+      dispatch(db.set('isChecked', false));
+      dispatch(db.reset('settings'));
+      expect(db.table('things').length).toEqual(1);
+      expect(db.get('isChecked')).toBeTruthy();
+    });
+
+    it('resets everything', () => {
+      dispatch(db.table('things').insert({ name: 'Test' }));
+      dispatch(db.set('isChecked', false));
+      dispatch(db.reset());
+      expect(db.table('things').length).toEqual(0);
+      expect(db.get('isChecked')).toBeTruthy();
+    });
+  });
+
   describe('with context', () => {
     it('creates entries in a new context', () => {
       dispatch(

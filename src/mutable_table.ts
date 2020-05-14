@@ -35,6 +35,10 @@ export class MutableTable<T extends Row> {
     return this.underlyingTable.ids;
   }
 
+  public get length(): number {
+    return this.ids.length;
+  }
+
   public changesFor(id: string): ObjectChanges<T> | undefined {
     return this.underlyingTable.changesFor(id);
   }
@@ -65,5 +69,9 @@ export class MutableTable<T extends Row> {
 
   public revert(ids?: RowIdentififying): void {
     this.dispatch(this.underlyingTable.revert(ids));
+  }
+
+  public truncate(): void {
+    this.dispatch(this.underlyingTable.truncate());
   }
 }

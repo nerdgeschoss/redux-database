@@ -104,6 +104,14 @@ export class MutableDB<State extends StateDefining> {
     this.dispatch(this.snapshot.revert(table, ids));
   }
 
+  public truncate(): void {
+    this.dispatch(this.snapshot.truncate());
+  }
+
+  public reset(type: 'all' | 'tables' | 'settings' = 'all'): void {
+    this.dispatch(this.snapshot.reset(type));
+  }
+
   public subscribe(callback: (action: DBAction) => void): () => void {
     this.subscribers.push(callback);
     return () => {
